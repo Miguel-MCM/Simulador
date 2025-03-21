@@ -29,7 +29,7 @@ class Equation:
         return iter(self.dict)
     
     def __str__(self):
-        return ' + '.join([ f'{self.dict[k]}({k.name})' for k in self.dict if k is not None ]) + f' = {-self.dict[None] if None in self else 0}'
+        return ' + '.join([ f'{self.dict[k]} {f"({k.name})" if " " in k.name else k.name}' for k in self.dict if k is not None ]) + f' = {-self.dict[None] if None in self else 0}'
     
 
 
