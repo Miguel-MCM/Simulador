@@ -82,3 +82,6 @@ class CurrentDependantCurrentSource(Branch):
             return eq
         else:
             return None
+        
+    def get_aux_eq(self) -> Equation:
+        return self.branch_of_current.get_current_eq(self.current_out_of)
