@@ -1,5 +1,5 @@
 from Node import Node
-from Branch import Resistor, IndependentCurrentSource, CurrentDependantCurrentSource
+from Branch import Resistor, IndependentCurrentSource, CurrentDependantCurrentSource, TensionDependantCurrentSource
 from Equation import Equation
 
 class Circuit:
@@ -24,11 +24,12 @@ if __name__ == '__main__':
     circuit = Circuit()
     n1 = Node(gnd=True)
     n2 = Node(name="v2")
-    src = IndependentCurrentSource(1, n1, n2)
+    src = IndependentCurrentSource(2, n1, n2)
     r1 = Resistor(1, n2, n1)
 
     n3 = Node(name="v3")
     dep_src = CurrentDependantCurrentSource(2, n1, n3, r1, n2)
+    #dep_src =TensionDependantCurrentSource(2, n1, n3, n2, n1)
     r2 = Resistor(1, n3, n1)
     circuit.add_node(n1)
     circuit.add_node(n2)

@@ -74,14 +74,41 @@ class CurrentDependantCurrentSource(Branch):
         else:
             return None
     
+        
+    def get_aux_eq(self) -> Equation:
+        return self.branch_of_current.get_current_eq(self.current_out_of)
+    
     def get_current_eq(self, node) -> Equation:
-        eq = self.branch_of_current.get_current_eq(self.current_out_of)
+        eq = self.get_aux_eq()
         multiplier = -self.multiplier if node == self.nodes[1] else self.multiplier
         eq *= multiplier
         if node in self.nodes:
             return eq
         else:
             return None
-        
+    
+class TensionDependantCurrentSource(Branch):
+    def __init__(self, conductance:float, node1: 'Node', node2: 'Node', v_plus: 'Node', v_minus: 'Node'):
+        super().__init__([node1, node2])
+        self.multiplier:float = conductance
+        self.v_plus:'Node' = v_plus
+        self.v_minus:'Node' = v_minus
+    
+    @property
+    def i(self) -> float:
+        if self.v_plus.solved and self.v_minus.solved:
+            return self.multiplier*(self.v_plus - self.v_minus)
+        else:
+            return None
+    
     def get_aux_eq(self) -> Equation:
-        return self.branch_of_current.get_current_eq(self.current_out_of)
+        return Equation({self.v_plus:1, self.v_minus:-1})
+
+    def get_current_eq(self, node) -> Equation:
+        eq = self.get_aux_eq()
+        multiplier = -self.multiplier if node == self.nodes[1] else self.multiplier
+        eq *= multiplier
+        if node in self.nodes:
+            return eq
+        else:
+            return None
