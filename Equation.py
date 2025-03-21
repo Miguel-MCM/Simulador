@@ -15,7 +15,12 @@ class Equation:
     def __mul__(self, other):
         for key in self.dict:
             self[key] *= other
-        return self.dict
+        return self
+
+    def __add__(self, other):
+        for key in other:
+            self[key] += other[key]
+        return self
 
     def __contains__(self, key):
         return key in self.dict
@@ -24,7 +29,7 @@ class Equation:
         return iter(self.dict)
     
     def __str__(self):
-        return ' + '.join([ f'{self.dict[k]}({k.name})' for k in self.dict if k is not None ]) + f' = {self.dict[None] if None in self else 0}'
+        return ' + '.join([ f'{self.dict[k]}({k.name})' for k in self.dict if k is not None ]) + f' = {-self.dict[None] if None in self else 0}'
     
 
 

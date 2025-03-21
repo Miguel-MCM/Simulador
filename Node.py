@@ -1,6 +1,6 @@
 from __future__ import annotations
 from collections import defaultdict
-from Branch import Branch
+from Branch import IndependantTensionSource, Branch
 from Equation import Equation
 
 class Node:
@@ -10,6 +10,7 @@ class Node:
         self.solved = False
         self.gnd = gnd
         self.name = name
+        self.supernode = None
 
         if gnd:
             self.v = 0
@@ -19,7 +20,9 @@ class Node:
     def connect(self, branch: Branch):
         self.branches.append(branch)
     
-    def get_currents_eq(self) -> Equation:
+    def get_currents_eq(self, ignore_supenode:bool=False) -> Equation:
+        if self.supernode is not None and not ignore_supenode:
+            return self.supernode.get_current_eq()
         eq = Equation()
         for branch in self.branches:
             condutances = branch.get_current_eq(self)
@@ -27,3 +30,6 @@ class Node:
                 for n in condutances:
                     eq[n] += condutances[n]
         return eq
+    
+
+    

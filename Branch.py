@@ -10,7 +10,6 @@ class Branch(ABC):
         [ n.connect(self) for n in self.nodes ]
 
     @property
-    @abstractmethod
     def i(self) -> float:
         pass
 
@@ -112,3 +111,46 @@ class TensionDependantCurrentSource(Branch):
             return eq
         else:
             return None
+        
+class SuperNode:
+    def __init__(self, tension_src:Branch, n_plus:Node, n_minus:Node):
+        self.n_plus:Node = n_plus
+        self.n_minus:Node = n_minus
+        self.tension_src:Branch = tension_src
+        self.state = 0
+
+        n_plus.supernode = self
+        n_minus.supernode = self
+    
+    def get_current_eq(self) -> Equation:
+        if self.state == 0:
+            self.state = 1
+            return self.n_plus.get_currents_eq(True) + self.n_minus.get_currents_eq(True)
+        if self.state == 1:
+            self.state = 2
+            return self.tension_src.get_aux_eq()
+class IndependantTensionSource(Branch):
+    def __init__(self, value:float, n_plus:'Node', n_minus:'Node'):
+        super().__init__([n_plus, n_minus])
+        self.value:float = value
+        self.n_plus = n_plus
+        self.n_minus = n_minus
+        
+        if n_plus.solved and n_minus.solved and (n_plus.v - n_minus.v != value):
+            raise Exception(f"Impossible circuit!\n{n_plus.name} and {n_minus.name} cant have a IndependantTensionSource of {self.value}.")
+        
+        if n_plus.solved:
+            n_minus.v = n_plus.v-value
+            n_minus.solved = True
+        elif n_minus.solved:
+            n_plus.v = n_minus.v+value
+            n_plus.solved = True
+        else:
+            SuperNode(self, n_plus, n_minus)
+    
+    def get_current_eq(self, node):
+        return None
+
+    def get_aux_eq(self) -> Equation:
+        return Equation({ self.n_plus:1, self.n_minus:-1, None:-self.value })        
+    
