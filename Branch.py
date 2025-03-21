@@ -112,24 +112,26 @@ class TensionDependantCurrentSource(Branch):
         else:
             return None
         
-class SuperNode:
-    def __init__(self, tension_src:Branch, n_plus:Node, n_minus:Node):
-        self.n_plus:Node = n_plus
-        self.n_minus:Node = n_minus
-        self.tension_src:Branch = tension_src
-        self.state = 0
+class IndependantTensionSource(Branch):
+    class SuperNode:
+        def __init__(self, tension_src:Branch, n_plus:Node, n_minus:Node):
+            self.n_plus:Node = n_plus
+            self.n_minus:Node = n_minus
+            self.tension_src:Branch = tension_src
+            self.state = 0
 
-        n_plus.supernode = self
-        n_minus.supernode = self
-    
-    def get_current_eq(self) -> Equation:
-        if self.state == 0:
+            n_plus.supernode = self
+            n_minus.supernode = self
+        
+        def get_currents_eq(self) -> Equation:
             self.state = 1
-            return self.n_plus.get_currents_eq(True) + self.n_minus.get_currents_eq(True)
-        if self.state == 1:
+            return self.n_plus.get_currents_eq() + self.n_minus.get_currents_eq()
+
+        def get_aux_eq(self) -> Equation:
             self.state = 2
             return self.tension_src.get_aux_eq()
-class IndependantTensionSource(Branch):
+
+    
     def __init__(self, value:float, n_plus:'Node', n_minus:'Node'):
         super().__init__([n_plus, n_minus])
         self.value:float = value
@@ -146,7 +148,7 @@ class IndependantTensionSource(Branch):
             n_plus.v = n_minus.v+value
             n_plus.solved = True
         else:
-            SuperNode(self, n_plus, n_minus)
+            self.SuperNode(self, n_plus, n_minus)
     
     def get_current_eq(self, node):
         return None

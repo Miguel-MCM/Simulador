@@ -20,9 +20,7 @@ class Node:
     def connect(self, branch: Branch):
         self.branches.append(branch)
     
-    def get_currents_eq(self, ignore_supenode:bool=False) -> Equation:
-        if self.supernode is not None and not ignore_supenode:
-            return self.supernode.get_current_eq()
+    def get_currents_eq(self) -> Equation:
         eq = Equation()
         for branch in self.branches:
             condutances = branch.get_current_eq(self)

@@ -10,7 +10,14 @@ class Circuit:
         self.nodes.append(node)
 
     def get_eq_system(self) -> list[Equation]:
-        eqs: list[Equation] = [ n.get_currents_eq() for n in filter(lambda n: not n.solved, self.nodes) ]
+        eqs:list[Equation] = []
+        for n in filter(lambda n: not n.solved, self.nodes):
+            if n.supernode is None:
+                eqs.append(n.get_currents_eq())
+            elif n.supernode.state == 0:
+                eqs.append(n.supernode.get_currents_eq())
+                eqs.append(n.supernode.get_aux_eq())
+
         for solved in filter(lambda n: n.solved, self.nodes):
             for eq in eqs:
                 if solved in eq:
