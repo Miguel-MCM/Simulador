@@ -173,4 +173,4 @@ class TensionDependantTensionSource(TensionSource):
             raise Exception(f"Impossible circuit!\n{n_plus.name} and {n_minus.name} cant have a TensionDependantTensionSource of {self.multiplier}.")
         
     def get_aux_eq(self) -> Equation:
-        return Equation({ self.n_plus:1, self.n_minus:-1, self.dep_n_plus:-1, self.dep_n_minus:1 })
+        return Equation({ self.n_plus:1, self.n_minus:-1, self.dep_n_plus:-self.multiplier, self.dep_n_minus:self.multiplier })

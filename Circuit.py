@@ -1,3 +1,4 @@
+import numpy as np
 from Node import Node
 from Branch import Resistor, IndependentCurrentSource, CurrentDependantCurrentSource, TensionDependantCurrentSource, \
                     IndependantTensionSource, CurrentDependantTensionSource ,TensionDependantTensionSource
@@ -33,8 +34,29 @@ class Circuit:
                     eq[None] += eq[solved]*solved.v
                     eq[solved] = 0
         return eqs
+    
+    def solve(self) -> dict:
+        eqs = [*self.get_nodal_eqs() , *self.get_aux_eqs()]
+        variables = set()
+        for eq in eqs:
+            variables.update(eq.variables)
+        if None in variables:
+            variables.remove(None)
+
+        args = []
+        for eq in eqs[:]:
+            if not (line:=eq.get_line(variables)) in args:
+                args.append(line)
+            else:
+                eqs.remove(eq)
         
-        
+        np_args = np.array(args)
+        np_ans = np.array([-eq[None] for eq in eqs ])
+        solution = np.linalg.solve(np_args, np_ans)
+        answer = {}
+        for v, s in zip(variables, solution):
+            answer[v] = s
+        return answer
 
     
 if __name__ == '__main__':
@@ -54,12 +76,14 @@ if __name__ == '__main__':
     circuit.add_node(n2)
     circuit.add_node(n3)
     circuit.add_node(n4)
-    
-    for eq in circuit.get_nodal_eqs():
-        print(eq)
-    for eq in circuit.get_aux_eqs():
-        print(eq)
-    
+
+    solution = circuit.solve()
+    for n in solution:
+        if type(n) == Node:
+            print(f"{n.name} = {solution[n]}")
+        else:
+            print(f"i_{n[0].name} = {solution[n]}")
+
 
 
 

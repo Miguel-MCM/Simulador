@@ -3,6 +3,13 @@ from collections import defaultdict
 class Equation:
     def __init__(self, dict_eq:dict|defaultdict=None):
         self.dict: defaultdict = defaultdict(float, dict_eq) if dict_eq is not None else defaultdict(float)
+
+    @property
+    def variables(self):
+        return self.dict.keys()
+    
+    def get_line(self, variables):
+        return [self[v] for v in variables]
     
     def __getitem__(self, key):
         return self.dict[key]
