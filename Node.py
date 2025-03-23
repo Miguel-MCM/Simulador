@@ -29,5 +29,8 @@ class Node:
                     eq[n] += condutances[n]
         return eq
     
+    def get_aux_eqs(self) -> list[Equation]:
+        return [b.get_aux_eq() for b in self.branches if b.get_aux_eq() is not None]
+    
 
     

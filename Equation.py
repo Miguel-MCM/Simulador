@@ -2,7 +2,7 @@ from collections import defaultdict
 
 class Equation:
     def __init__(self, dict_eq:dict|defaultdict=None):
-        self.dict: defaultdict = dict_eq if dict_eq is not None else defaultdict(float)
+        self.dict: defaultdict = defaultdict(float, dict_eq) if dict_eq is not None else defaultdict(float)
     
     def __getitem__(self, key):
         return self.dict[key]
@@ -29,7 +29,7 @@ class Equation:
         return iter(self.dict)
     
     def __str__(self):
-        return ' + '.join([ f'{self.dict[k]} {f"({k.name})" if " " in k.name else k.name}' for k in self.dict if k is not None ]) + f' = {-self.dict[None] if None in self else 0}'
+        return ' + '.join([ f'{self.dict[k]} {(f"({k.name})" if " " in k.name else k.name) if type(k).__name__ == 'Node' else (f"i{'{'}{k[0].name}{'}'}")}' for k in self.dict if k is not None ]) + f' = {-self.dict[None] if None in self else 0}'
     
 
 
