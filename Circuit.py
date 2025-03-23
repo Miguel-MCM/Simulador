@@ -61,21 +61,16 @@ class Circuit:
     
 if __name__ == '__main__':
     circuit = Circuit()
-    n1 = Node(gnd=True)
-    n2 = Node(name="v2")
-    n3 = Node(name='v3')
-    n4 = Node(name='v4')
+    n1 = Node(circuit, gnd=True)
+    n2 = Node(circuit, name="v2")
+    n3 = Node(circuit, name='v3')
+    n4 = Node(circuit, name='v4')
     src = IndependantTensionSource(1, n2, n1, name='s1')
     r1 = Resistor(1, n2, n1, name='r1')
 
     r2 = Resistor(1, n3, n1, name='r2')
     dep_src = TensionDependantTensionSource(2, n4, n3, n2, n1, name='s2')
     r3 = Resistor(1, n4, n1, name='r3')
-
-    circuit.add_node(n1)
-    circuit.add_node(n2)
-    circuit.add_node(n3)
-    circuit.add_node(n4)
 
     solution = circuit.solve()
     for n in solution:

@@ -4,7 +4,9 @@ from Branch import IndependantTensionSource, Branch
 from Equation import Equation
 
 class Node:
-    def __init__(self, v:float=None, gnd:bool=False, name:str = ''):
+    def __init__(self, circuit, v:float=None, gnd:bool=False, name:str = ''):
+        self.circuit = circuit
+
         self.v = v
         self.branches : list[Branch] = []
         self.solved = False
@@ -16,6 +18,8 @@ class Node:
             self.v = 0
             self.name = 'GND'
             self.solved = True
+
+        circuit.add_node(self)
     
     def connect(self, branch: Branch):
         self.branches.append(branch)
