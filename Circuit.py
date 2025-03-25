@@ -1,7 +1,7 @@
 import numpy as np
 from Node import Node
-from Branch import Resistor, IndependentCurrentSource, CurrentDependantCurrentSource, TensionDependantCurrentSource, \
-                    IndependantTensionSource, CurrentDependantTensionSource ,TensionDependantTensionSource
+from Branch import Resistor, IndependentCurrentSource, CurrentDependentCurrentSource, TensionDependentCurrentSource, \
+                    IndependentTensionSource, CurrentDependentTensionSource ,TensionDependentTensionSource
 from Equation import Equation
 
 class Circuit:
@@ -61,16 +61,17 @@ class Circuit:
     
 if __name__ == '__main__':
     circuit = Circuit()
-    n1 = Node(circuit, gnd=True)
-    n2 = Node(circuit, name="v2")
-    n3 = Node(circuit, name='v3')
-    n4 = Node(circuit, name='v4')
-    src = IndependantTensionSource(1, n2, n1, name='s1')
-    r1 = Resistor(1, n2, n1, name='r1')
+    gnd = Node(circuit, gnd=True)
+    v1 = Node(circuit, name="V1")
+    v2 = Node(circuit, name="V2")
 
-    r2 = Resistor(1, n3, n1, name='r2')
-    dep_src = TensionDependantTensionSource(2, n4, n3, n2, n1, name='s2')
-    r3 = Resistor(1, n4, n1, name='r3')
+    srcA = IndependentCurrentSource(2*(10**-3), gnd, v2, name="SA")
+    
+    r1 = Resistor(12*(10**3), v1, gnd, name="R1")
+    r2 = Resistor(6*(10**3), v1, v2, name="R2")
+    r3 = Resistor(3*(10**3), v2, gnd, name="R3")
+
+    srcB = CurrentDependentCurrentSource(2, v1, gnd, r3, v2, name="SB")
 
     solution = circuit.solve()
     for n in solution:

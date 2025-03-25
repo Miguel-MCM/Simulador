@@ -1,6 +1,6 @@
 from __future__ import annotations
 from collections import defaultdict
-from Branch import IndependantTensionSource, Branch
+from Branch import IndependentTensionSource, Branch
 from Equation import Equation
 
 class Node:

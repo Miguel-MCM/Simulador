@@ -1,1 +1,6 @@
 /__pycache__
+.pytest_cache
+Include
+Lib
+Scripts
+pyvenv.cfg
