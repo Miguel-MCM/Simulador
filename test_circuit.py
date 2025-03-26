@@ -1,4 +1,5 @@
 import Circuit
+import pytest
 
 def test_independent_current_source():
     circuit = Circuit.Circuit()
@@ -177,3 +178,82 @@ def test_modified_nodal_tension_dependent_tension_source():
     assert abs(solution[v3] - (-100)) < 100/100 , f'V1 = {solution[v1]}, Should be -100'
     assert abs(solution[v4] - (-32)) < 32/100 , f'V2 = {solution[v2]}, Should be -32'
     assert abs(solution[v5] - (-48)) < 48/100 , f'V3 = {solution[v3]}, Should be -48'
+
+def test_modified_nodal_resistance_in_short_circuit():
+    circuit = Circuit.Circuit()
+    gnd = Circuit.Node(circuit, gnd=True)
+    v1 = Circuit.Node(circuit, name="V1")
+
+    src = Circuit.IndependentTensionSource(3, gnd, v1, name="S")
+    r1 = Circuit.Resistor(100, v1, v1, name="R1")
+    r2 = Circuit.Resistor(10, v1, gnd, name="R2")
+
+    solution = circuit.solve()
+    assert abs(solution[v1] - 3) < 3/100,  f'V1 = {solution[v1]}, Should be 3'
+
+def test_modified_nodal_tension_source_in_short_circuit():
+    circuit = Circuit.Circuit()
+    gnd = Circuit.Node(circuit, gnd=True)
+    v1 = Circuit.Node(circuit, name="V1")
+
+    with pytest.raises(Exception):
+        src = Circuit.IndependentTensionSource(3, gnd, gnd, name="S")
+
+    with pytest.raises(Exception) as e_info:
+        src = Circuit.IndependentTensionSource(3, v1, v1, name="S")
+
+def test_modified_nodal_current_source_in_short_circuit():
+    circuit = Circuit.Circuit()
+    gnd = Circuit.Node(circuit, gnd=True)
+    v1 = Circuit.Node(circuit, name="V1")
+
+    src = Circuit.IndependentCurrentSource(3, gnd, gnd, name="S")
+    r1 = Circuit.Resistor(6, gnd, v1, name="R")
+
+    solution = circuit.solve()
+    assert solution[v1] == 0,  f'V1 = {solution[v1]}, Should be 0'
+
+def test_modifed_nodal_resistor_in_open_circuit():
+    circuit = Circuit.Circuit()
+    gnd = Circuit.Node(circuit, gnd=True)
+    v1 = Circuit.Node(circuit, name="V1")
+    v2 = Circuit.Node(circuit, name="V2")
+
+    src = Circuit.IndependentTensionSource(1, gnd, v1, name="S")
+    r1 = Circuit.Resistor(2, v1, gnd, name="R1")
+    r2 = Circuit.Resistor(1, v1, v2, name="R2")
+
+    solution = circuit.solve()
+    assert solution[v1] == solution[v2],  f'V1 = {solution[v1]}, Should be equal V2 = {solution[v2]}'
+
+def test_modified_nodal_tension_source_in_open_circuit():
+    circuit = Circuit.Circuit()
+    gnd = Circuit.Node(circuit, gnd=True)
+    v1 = Circuit.Node(circuit, name="V1")
+
+    src = Circuit.IndependentTensionSource(1, gnd, v1, name="S")
+
+    solution = circuit.solve()
+    assert solution[v1] == 1,  f'V1 = {solution[v1]}, Should be 1'
+
+def test_modified_nodal_current_source_in_open_circuit():
+    circuit = Circuit.Circuit()
+    gnd = Circuit.Node(circuit, gnd=True)
+    v1 = Circuit.Node(circuit, name="V1")
+
+    src = Circuit.IndependentCurrentSource(1, gnd, v1, name="S")
+
+    with pytest.raises(Exception) as e_info:
+        solution = circuit.solve()
+
+def test_modified_nodal_unconected_node():
+    circuit = Circuit.Circuit()
+    gnd = Circuit.Node(circuit, gnd=True)
+    v1 = Circuit.Node(circuit, name="V1")
+    v2 = Circuit.Node(circuit, name="V2")
+
+    src = Circuit.IndependentTensionSource(1, gnd, v1, name="S")
+    r1 = Circuit.Resistor(2, v1, gnd, name="R1")
+
+    with pytest.raises(Exception) as e_info:
+        solution = circuit.solve()

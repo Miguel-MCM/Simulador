@@ -129,6 +129,9 @@ class TensionSource(Branch):
         self.n_plus = n_plus
         self.n_minus = n_minus
 
+        if n_plus == n_minus:
+            raise Exception(f"IndependentTensionSource: {self.name} in short circuit.")
+
     def get_current_eq(self, node):
         if node == self.nodes[1]:
             return Equation({(self, self.nodes[0]):1})
