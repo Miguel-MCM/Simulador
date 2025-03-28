@@ -1,6 +1,6 @@
 from __future__ import annotations
 from collections import defaultdict
-from Branch import IndependentTensionSource, Branch
+from Branch import Branch, TensionSource
 from Equation import Equation
 
 class Node:
@@ -35,6 +35,16 @@ class Node:
     
     def get_aux_eqs(self) -> list[Equation]:
         return [b.get_aux_eq() for b in self.branches if b.get_aux_eq() is not None]
+    
+    def unsolve(self):
+        if self.gnd:
+            return
+        self.v = None
+        self.solved = False
+
+        for b in self.branches:
+            if issubclass(type(b), TensionSource):
+                b.i = None
     
 
     

@@ -1,15 +1,25 @@
 import numpy as np
 from Node import Node
 from Branch import Resistor, IndependentCurrentSource, CurrentDependentCurrentSource, TensionDependentCurrentSource, \
-                    IndependentTensionSource, CurrentDependentTensionSource ,TensionDependentTensionSource
+                    IndependentTensionSource, CurrentDependentTensionSource ,TensionDependentTensionSource, TensionSource
 from Equation import Equation
 
 class Circuit:
     def __init__(self):
         self.nodes: list[Node] = []
+        self.solved = False
+
+    def unsolve(self):
+        self.solved = False
+        for n in self.nodes:
+            if not n.gnd:
+                n.unsolve()
+
     
     def add_node(self, node:Node) -> None:
         self.nodes.append(node)
+        if self.solved:
+            self.unsolve()
 
     def get_nodal_eqs(self) -> set[Equation]:
         eqs:set[Equation] = set()
@@ -56,6 +66,17 @@ class Circuit:
         answer = {}
         for v, s in zip(variables, solution):
             answer[v] = s
+
+        print(answer)
+        for var in variables:
+            if type(var) == Node:
+                var.v = answer[var]
+                var.solved = True
+            elif issubclass(type(var[0]), TensionSource):
+                var[0].i = answer[var]        
+
+        self.solved = True
+
         return answer
 
     

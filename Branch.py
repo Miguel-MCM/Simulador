@@ -35,7 +35,8 @@ class Resistor(Branch):
     @property
     def i(self) -> float:
         if all([n.solved for n in self.nodes]):
-            return self.y * (max(self.nodes)-min(self.nodes))
+            tensions = [n.v for n in self.nodes]
+            return self.y * (max(tensions) - min(tensions))
         else:
             return None
 
@@ -131,6 +132,8 @@ class TensionSource(Branch):
 
         if n_plus == n_minus:
             raise Exception(f"IndependentTensionSource: {self.name} in short circuit.")
+        
+        self._i = None
 
     def get_current_eq(self, node):
         if node == self.nodes[1]:
@@ -139,6 +142,14 @@ class TensionSource(Branch):
             return Equation({(self, self.nodes[0]):-1})
         else:
             return None
+
+    @property
+    def i(self) -> float:
+        return self._i
+
+    @i.setter
+    def i(self, value):
+        self._i = value
 
 
 class IndependentTensionSource(TensionSource):

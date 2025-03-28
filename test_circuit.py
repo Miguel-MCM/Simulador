@@ -9,6 +9,7 @@ def test_independent_current_source():
     r1 = Circuit.Resistor(5, gnd, n1, name="R1")
 
     assert circuit.solve()[n1] == 50, "Should be 50"
+    assert r1.i == src.i == 10, "Current in all branches in the loop should be equal"
 
 def test_independent_tension_source():
     circuit = Circuit.Circuit()
@@ -18,7 +19,7 @@ def test_independent_tension_source():
     r1 = Circuit.Resistor(5, gnd, n1, name="R1")
 
     assert circuit.solve()[n1] == 2, "Should be 2"
-
+    assert r1.i == -src.i == 2/5, "Current in all branches in the loop should be equal"
 # Using Irwin Examples
 
 # Example 3.1
@@ -38,6 +39,9 @@ def test_modified_nodal_Independent_current_sources_2nodes():
     solution = circuit.solve()
     assert abs(solution[v1] - (-6)) < 6/100
     assert abs(solution[v2] - (-15)) < 15/100
+    assert abs(r1.i - 1/2*10**-3) < (1/2*10**-3)/100
+    assert abs(r2.i - 3/2*10**-3) < (3/2*10**-3)/100
+    assert abs(r3.i - 5/2*10**-3) < (5/2*10**-3)/100
 
 # Example 3.2
 def test_modified_nodal_Independent_current_sources_4nodes():
