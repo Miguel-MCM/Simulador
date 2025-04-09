@@ -60,15 +60,18 @@ class Circuit:
             variables.remove(None)
 
         args = []
+        ans = []
         for eq in eqs[:]:
             if not (line:=eq.get_line(variables)) in args:
                 args.append(line)
+                ans.append(-eq[None])
             else:
                 eqs.remove(eq)
         
         np_args = np.array(args)
-        np_ans = np.array([-eq[None] for eq in eqs ])
+        np_ans = np.array(ans)
         solution = np.linalg.solve(np_args, np_ans)
+
         answer = {}
         for v, s in zip(variables, solution):
             answer[v] = s
@@ -92,14 +95,18 @@ if __name__ == '__main__':
     gnd = Node(circuit, gnd=True)
     v1 = Node(circuit, name="V1")
     v2 = Node(circuit, name="V2")
+    v3 = Node(circuit, name="V3")
+    v4 = Node(circuit, name="V4")
 
-    srcA = IndependentCurrentSource(2*(10**-3), gnd, v2, name="SA")
+    srcA = IndependentTensionSource(6, v2, gnd, name="SA")
+    srcB = IndependentTensionSource(12, v3, v1, name="SB")
+    srcC = IndependentTensionSource(12, gnd, v4, name="SC")
     
-    r1 = Resistor(12*(10**3), v1, gnd, name="R1")
-    r2 = Resistor(6*(10**3), v1, v2, name="R2")
-    r3 = Resistor(3*(10**3), v2, gnd, name="R3")
-
-    srcB = CurrentDependentCurrentSource(2, v1, gnd, r3, v2, name="SB")
+    r1 = Resistor(2*(10**3), v1, v2, name="R1")
+    r2 = Resistor(1*(10**3), v2, v3, name="R2")
+    r3 = Resistor(2*(10**3), v3, gnd, name="R3")
+    r4 = Resistor(1*(10**3), v3, v4, name="R4")
+    r5 = Resistor(2*(10**3), v4, v1, name="R5")
 
     solution = circuit.solve()
     for n in solution:

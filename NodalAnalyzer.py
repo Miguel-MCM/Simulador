@@ -25,7 +25,7 @@ class NodalAnalyzer:
             eq += n.get_currents_eq()
         return eq
     
-    def filter_equal_eqs(self, eqs:list[Equation]):
+    def filter_equal_eqs(self, eqs:list[Equation.Equation]):
         new = list()
         dicts = list()
         for eq in eqs:
