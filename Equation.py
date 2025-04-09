@@ -11,6 +11,11 @@ class Equation:
     def get_line(self, variables):
         return [self[v] for v in variables]
     
+    def __eq__(self, other):
+        if type(other) == type(self):
+            return self.dict == other.dict
+        return super.__eq__(other) 
+    
     def __getitem__(self, key):
         return self.dict[key]
 

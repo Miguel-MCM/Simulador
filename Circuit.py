@@ -21,10 +21,16 @@ class Circuit:
         if self.solved:
             self.unsolve()
 
-    def get_nodal_eqs(self) -> set[Equation]:
-        eqs:set[Equation] = set()
+    def __getitem__(self, name:str):
+        for n in self.nodes:
+            if n.name == name:
+                return n
+        return None
+
+    def get_nodal_eqs(self) -> list[Equation]:
+        eqs:list[Equation] = list()
         for n in filter(lambda n: not n.solved, self.nodes):
-            eqs.add(n.get_currents_eq())
+            eqs.append(n.get_currents_eq())
 
         for solved in filter(lambda n: n.solved, self.nodes):
             for eq in eqs:
@@ -33,11 +39,11 @@ class Circuit:
                     eq[solved] = 0
         return eqs
     
-    def get_aux_eqs(self) -> set[Equation]:
-        eqs:set[Equation] = set()
+    def get_aux_eqs(self) -> list[Equation]:
+        eqs:list[Equation] = list()
         for n in filter(lambda n: not n.solved, self.nodes):
             for eq in n.get_aux_eqs():
-                eqs.add(eq)
+                eqs.append(eq)
         for solved in filter(lambda n: n.solved, self.nodes):
             for eq in eqs:
                 if solved in eq:
@@ -67,7 +73,6 @@ class Circuit:
         for v, s in zip(variables, solution):
             answer[v] = s
 
-        print(answer)
         for var in variables:
             if type(var) == Node:
                 var.v = answer[var]
@@ -78,6 +83,8 @@ class Circuit:
         self.solved = True
 
         return answer
+    
+
 
     
 if __name__ == '__main__':
