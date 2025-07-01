@@ -4,7 +4,7 @@ from Branch import Branch, TensionSource
 from Equation import Equation
 
 class Node:
-    def __init__(self, circuit, v:float=None, gnd:bool=False, name:str = ''):
+    def __init__(self, circuit, v:float|None=None, gnd:bool=False, name:str = ''):
         self.circuit = circuit
 
         self.v = v

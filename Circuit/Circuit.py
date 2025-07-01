@@ -1,13 +1,24 @@
 import numpy as np
 from Node import Node
 from Branch import Resistor, IndependentCurrentSource, CurrentDependentCurrentSource, TensionDependentCurrentSource, \
-                    IndependentTensionSource, CurrentDependentTensionSource ,TensionDependentTensionSource, TensionSource
+                    IndependentTensionSource, CurrentDependentTensionSource ,TensionDependentTensionSource, TensionSource, Branch
 from Equation import Equation
 
 class Circuit:
     def __init__(self):
         self.nodes: list[Node] = []
         self.solved = False
+
+    def get_nodes(self) -> list[Node]:
+        return self.nodes
+    
+    def get_neighbours_with_branches(self, node:Node) -> list[tuple[Node, 'Branch']]:
+        neighbours = []
+        for b in node.branches:
+            for n in b.nodes:
+                if n != node and (n, b) not in neighbours:
+                    neighbours.append((n, b))
+        return neighbours
 
     def unsolve(self):
         self.solved = False

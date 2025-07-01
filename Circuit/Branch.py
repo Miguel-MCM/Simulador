@@ -10,9 +10,10 @@ class Branch(ABC):
         self.name = name
         self.nodes = nodes
         [ n.connect(self) for n in self.nodes ]
+        self.loops = []
 
     @property
-    def i(self) -> float:
+    def i(self) -> float | None:
         pass
 
     @abstractmethod
@@ -22,6 +23,18 @@ class Branch(ABC):
     @abstractmethod
     def get_aux_eq(self) -> Equation:
         pass
+
+    def get_loop_voltage(self, from_node: 'Node') -> float:
+        """Returns the voltage contribution of this branch when traversing from from_node"""
+        if from_node not in self.nodes:
+            return 0
+        return 0
+
+    def get_loop_resistance(self, from_node: 'Node') -> float:
+        """Returns the resistance contribution of this branch when traversing from from_node"""
+        if from_node not in self.nodes:
+            return 0
+        return 0
 
 class Resistor(Branch):
     def __init__(self, resistance:float, node1: 'Node', node2: 'Node', name:str=""):
@@ -50,7 +63,17 @@ class Resistor(Branch):
     
     def get_aux_eq(self):
         return None
-        
+    
+    def get_loop_resistance(self, from_node: 'Node') -> float:
+        if from_node not in self.nodes:
+            return 0
+        return self.r
+    
+    def get_tension_eq(self, from_node: 'Node') -> Equation:
+        if from_node not in self.nodes:
+            return None
+        return Equation(dict_eq=dict([ (l, 1 if l.branches[l.nodes.index(from_node)] == self else -1) for l in self.loops ])) * self.r
+
 class IndependentCurrentSource(Branch):
     def __init__(self, current:float, node1: 'Node', node2: 'Node', name:str=""):
         self.value = current
@@ -74,6 +97,7 @@ class IndependentCurrentSource(Branch):
 
 class CurrentDependentCurrentSource(Branch):
     def __init__(self, current_mulltiplier:float, node1: 'Node', node2: 'Node', branch_of_current: Branch, current_out_of: Node, name:str=""):
+        self.value = current_mulltiplier
         super().__init__([node1, node2], name=name)
         self.multiplier:float = current_mulltiplier
         self.branch_of_current:Branch = branch_of_current
@@ -85,6 +109,14 @@ class CurrentDependentCurrentSource(Branch):
             return self.multiplier * branch_i
         else:
             return None
+        
+    def get_tension_eq(self, from_node: 'Node') -> Equation:
+        if from_node not in self.nodes:
+            return None
+        return Equation(dict_eq = {(self, self.nodes[0]): -1 if from_node == self.nodes[0] else 1})
+    
+    def get_tension_aux_eq(self) -> Equation:
+        return Equation({(self, self.nodes[0]): -1}) + Equation(dict([(l, 1 if l.branches[l.nodes.index(self.current_out_of)] == self.branch_of_current else -1) for l in self.branch_of_current.loops])) * self.multiplier
     
         
     def get_aux_eq(self) -> Equation:
@@ -100,6 +132,7 @@ class CurrentDependentCurrentSource(Branch):
     
 class TensionDependentCurrentSource(Branch):
     def __init__(self, conductance:float, node1: 'Node', node2: 'Node', v_plus: 'Node', v_minus: 'Node', name:str=""):
+        self.value = conductance
         super().__init__([node1, node2], name=name)
         self.multiplier:float = conductance
         self.v_plus:'Node' = v_plus
@@ -122,7 +155,54 @@ class TensionDependentCurrentSource(Branch):
             return Equation({(self, self.nodes[0]):-1})
         else:
             return None
+        
+    def get_tension_eq(self, from_node: 'Node') -> Equation:
+        if from_node not in self.nodes:
+            return None
+        return Equation(dict_eq = {(self, self.nodes[0]): -1 if from_node == self.nodes[0] else 1})
+    
+    def get_tension_aux_eq(self) -> Equation:
+        from collections import deque
 
+        eq = Equation({(self, self.v_minus): -1})
+
+        queue = deque()
+        queue.append((self.v_minus, []))  # (current_node, path_so_far)
+        visited = set()
+
+        path = None
+
+        while queue:
+            current_node, path_so_far = queue.popleft()
+
+            if current_node == self.v_plus:
+                path = path_so_far
+                break
+
+            visited.add(current_node)
+
+            for branch in current_node.branches:
+                if branch.nodes[0] == current_node:
+                    neighbor = branch.nodes[1]
+                elif branch.nodes[1] == current_node:
+                    neighbor = branch.nodes[0]
+                else:
+                    continue
+
+                if neighbor not in visited:
+                    queue.append((neighbor, path_so_far + [(branch, current_node)]))
+
+        if path is None:
+            raise Exception(f"Não há caminho entre {self.v_minus.name} e {self.v_plus.name}")
+
+        for branch, from_node in path:
+            tension_eq = branch.get_tension_eq(from_node)
+            if tension_eq is None:
+                raise Exception(f"O ramo {branch.name} não suporta get_tension_eq")
+            eq += tension_eq * -self.multiplier
+
+        return eq
+    
 class TensionSource(Branch):
     def __init__(self, value:float, n_minus:'Node', n_plus:'Node', name:str=""):
         super().__init__([n_minus, n_plus], name=name)
@@ -142,9 +222,18 @@ class TensionSource(Branch):
             return Equation({(self, self.nodes[0]):-1})
         else:
             return None
+        
+    def get_loop_voltage(self, from_node: 'Node') -> float:
+        if from_node not in self.nodes:
+            return 0
+        # If traversing from n_minus to n_plus, voltage is positive
+        if from_node == self.n_minus:
+            return self.value
+        # If traversing from n_plus to n_minus, voltage is negative
+        return -self.value
 
     @property
-    def i(self) -> float:
+    def i(self) -> float | None:
         return self._i
 
     @i.setter
@@ -162,6 +251,11 @@ class IndependentTensionSource(TensionSource):
     def get_aux_eq(self) -> Equation:
         return Equation({ self.n_plus:1, self.n_minus:-1, None:-self.value })
     
+    def get_tension_eq(self, from_node: 'Node') -> Equation:
+        if from_node not in self.nodes:
+            return None
+        return Equation(dict_eq = {None: -self.value if from_node == self.n_minus else self.value})
+
 class CurrentDependentTensionSource(TensionSource):
     def __init__(self, multiplier:float, n_minus:Node, n_plus:Node, branch_of_current: Branch, current_out_of: Node, name:str=""):
         super().__init__(multiplier, n_minus, n_plus, name=name)
@@ -173,7 +267,24 @@ class CurrentDependentTensionSource(TensionSource):
             raise Exception(f"Impossible circuit!\n{n_plus.name} and {n_minus.name} cant have a CurrentDependentTensionSource of {self.multiplier}.")
         
     def get_aux_eq(self) -> Equation:
-        return (self.branch_of_current.get_current_eq(self.current_out_of) * -self.multiplier) + Equation({ self.n_plus:1, self.n_minus:-1})
+        return (self.branch_of_current.get_current_eq(self.current_out_of) * self.multiplier) + Equation({(self, self.nodes[0]):-1})
+    
+    def get_loop_voltage(self, from_node: 'Node') -> float:
+        if from_node not in self.nodes:
+            return 0
+        # If traversing from n_minus to n_plus, voltage is positive
+        if from_node == self.n_minus:
+            return 1
+        # If traversing from n_plus to n_minus, voltage is negative
+        return -1
+    
+    def get_tension_eq(self, from_node: 'Node') -> Equation:
+        if from_node not in self.nodes:
+            return None
+        return Equation(dict_eq = {(self, self.n_minus): -1 if from_node == self.n_minus else 1})
+
+    def get_tension_aux_eq(self) -> Equation:
+        return Equation({(self, self.n_minus): -1}) + Equation(dict([(l, 1 if l.branches[l.nodes.index(self.current_out_of)] == self.branch_of_current else -1) for l in self.branch_of_current.loops])) * self.multiplier
 
 class TensionDependentTensionSource(TensionSource):
     def __init__(self, multiplier:float, n_minus:Node, n_plus:Node, dep_n_plus:Node, dep_n_minus:Node, name:str=""):
@@ -186,4 +297,61 @@ class TensionDependentTensionSource(TensionSource):
             raise Exception(f"Impossible circuit!\n{n_plus.name} and {n_minus.name} cant have a TensionDependentTensionSource of {self.multiplier}.")
         
     def get_aux_eq(self) -> Equation:
-        return Equation({ self.n_plus:1, self.n_minus:-1, self.dep_n_plus:-self.multiplier, self.dep_n_minus:self.multiplier })
+        return Equation({ (self, self.n_plus): -1, self.dep_n_plus:self.multiplier, self.dep_n_minus:-self.multiplier })
+    
+    def get_loop_voltage(self, from_node: 'Node') -> float:
+        if from_node not in self.nodes:
+            return 0
+        # If traversing from n_minus to n_plus, voltage is positive
+        if from_node == self.n_minus:
+            return 1
+        # If traversing from n_plus to n_minus, voltage is negative
+        return -1
+    
+    def get_tension_eq(self, from_node: 'Node') -> Equation:
+        if from_node not in self.nodes:
+            return None
+        return Equation(dict_eq = {(self, self.n_minus): -1 if from_node == self.n_minus else 1})
+
+    def get_tension_aux_eq(self) -> Equation:
+        from collections import deque
+
+        eq = Equation({(self, self.n_minus): -1})
+
+        queue = deque()
+        queue.append((self.dep_n_minus, []))  # (current_node, path_so_far)
+        visited = set()
+
+        path = None
+
+        while queue:
+            current_node, path_so_far = queue.popleft()
+
+            if current_node == self.dep_n_plus:
+                path = path_so_far
+                break
+
+            visited.add(current_node)
+
+            for branch in current_node.branches:
+                if branch.nodes[0] == current_node:
+                    neighbor = branch.nodes[1]
+                elif branch.nodes[1] == current_node:
+                    neighbor = branch.nodes[0]
+                else:
+                    continue
+
+                if neighbor not in visited:
+                    queue.append((neighbor, path_so_far + [(branch, current_node)]))
+
+        if path is None:
+            raise Exception(f"Não há caminho entre {self.dep_n_minus.name} e {self.dep_n_plus.name}")
+
+        for branch, from_node in path:
+            tension_eq = branch.get_tension_eq(from_node)
+            if tension_eq is None:
+                raise Exception(f"O ramo {branch.name} não suporta get_tension_eq")
+            eq += tension_eq * -self.multiplier
+
+        return eq
+

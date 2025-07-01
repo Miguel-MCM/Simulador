@@ -41,7 +41,10 @@ class Equation:
         return iter(self.dict)
     
     def __str__(self):
-        return ' + '.join([ f'{self.dict[k]} {(f"({k.name})" if " " in k.name else k.name) if type(k).__name__ == 'Node' else (f"i{'{'}{k[0].name}{'}'}")}' for k in self.dict if k is not None ]) + f' = {-self.dict[None] if None in self else 0}'
+        return ' + '.join([ f'{self.dict[k]} {(f"({k.name})" if " " in k.name else k.name) if type(k).__name__ in ['Node', 'Loop'] else (f"i{'{'}{k[0].name}{'}'}")}' for k in self.dict if k is not None ]) + f' = {-self.dict[None] if None in self else 0}'
     
-
+    def equal(self, other):
+        if type(other) == type(self):
+            return self.dict == other.dict
+        return False
 
