@@ -5,7 +5,7 @@ import numpy as np
 class NodalAnalyzer:
     def __init__(self, circuit:Circuit):
         self.circuit = circuit
-        self.solved_nodes = {circuit['GND']}
+        self.solved_nodes:set[Node] = {circuit['GND']} # type:ignore
         self.map_solved_nodes(circuit['GND']) # type: ignore
 
     def map_solved_nodes(self, node:Node):
@@ -19,7 +19,7 @@ class NodalAnalyzer:
                 if not other or other.solved:
                     continue
                 other.solved = True
-                other.v = (curr.v + b.value) if other == b.nodes[1] else curr.v - b.value
+                other.v = (curr.v + b.value) if other == b.nodes[1] else curr.v - b.value # type:ignore
                 self.map_solved_nodes(other)
 
     def make_super_node(self, tension_source) -> Equation:
@@ -40,7 +40,7 @@ class NodalAnalyzer:
             eq += n.get_currents_eq()
         return eq
     
-    def filter_equal_eqs(self, eqs:list[Equation]):
+    def filter_equal_eqs(self, eqs:list[Equation]) -> list[Equation]:
         new = list()
         dicts = list()
         for eq in eqs:
@@ -49,7 +49,7 @@ class NodalAnalyzer:
                 new.append(eq)
         return new
 
-    def get_conductances_matrix(self) -> tuple[list[Equation]]:
+    def get_conductances_matrix(self) -> tuple[list[Equation], list[Equation]]:
         nodes_eqs = self.circuit.get_nodal_eqs()
         aux_eqs = self.circuit.get_aux_eqs()
 
@@ -77,46 +77,6 @@ class NodalAnalyzer:
         for n in self.solved_nodes:
             if n.name == 'GND':
                 continue
-            nodes_eqs.append(Equation({n:1, None:-n.v}))
-        # Substitute values for solved nodes
-        #for e in nodes_eqs:
-        #    for n in solved_nodes:
-        #        if n in e:
-        #            e[None] += e[n]*solved_nodes[n]
-        #            e[n] = 0
-        
-        
-        #print("Nodes:")
-        #[print(e) for e in self.filter_equal_eqs(nodes_eqs)]
-        #
-        #print("Aux:")
-        #[print(e) for e in self.filter_equal_eqs(aux_eqs)]
+            nodes_eqs.append(Equation({n:1, None:-n.v})) # type:ignore
+
         return self.filter_equal_eqs(nodes_eqs), self.filter_equal_eqs(aux_eqs)
-
-
-
-if __name__ == "__main__":
-    circuit = Circuit()
-    gnd = Node(circuit, gnd=True)
-    v1 = Node(circuit, name="V1")
-
-    #srcA = IndependentTensionSource(2, gnd, v1, name="SA")
-    srcA = IndependentCurrentSource(8, gnd, v1, name="SA")
-    
-    r1 = Resistor(4, v1, gnd, name="R1")
-
-    v2 = Node(circuit, name="V2")
-    v3 = Node(circuit, name="V3")
-    r2 = Resistor(4, v2, gnd, name="R2")
-    r3 = Resistor(4, v2, v3, name="R3")
-    r4 = Resistor(4, v3, gnd, name="R4")
-
-    #srcB = TensionDependentCurrentSource(2, gnd, v2, v1, gnd, name="SB")
-    #srcB = CurrentDependentTensionSource(3, v2, v3, r1, gnd, name="SB")
-    srcB = TensionDependentTensionSource(2, v2, v3, v1, gnd, name="SB")
-
-    v4 = Node(circuit, name="V4")
-    srcC = CurrentDependentTensionSource(2, v3, v4, r2, gnd, name="SC")
-
-    nodal = NodalAnalyzer(circuit)
-    print(nodal.get_conductances_matrix())

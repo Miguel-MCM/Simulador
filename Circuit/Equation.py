@@ -1,8 +1,8 @@
 from collections import defaultdict
 
 class Equation:
-    def __init__(self, dict_eq:dict|defaultdict=None):
-        self.dict: defaultdict = defaultdict(float, dict_eq) if dict_eq is not None else defaultdict(float)
+    def __init__(self, dict_eq:dict|defaultdict=defaultdict(float)):
+        self.dict: defaultdict = defaultdict(float, dict_eq)
 
     @property
     def variables(self):
@@ -14,7 +14,7 @@ class Equation:
     def __eq__(self, other):
         if type(other) == type(self):
             return self.dict == other.dict
-        return super.__eq__(other) 
+        return super().__eq__(other) 
     
     def __getitem__(self, key):
         return self.dict[key]

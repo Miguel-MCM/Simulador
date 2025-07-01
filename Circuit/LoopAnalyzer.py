@@ -1,11 +1,11 @@
-import Circuit
+from Circuit import Circuit, Branch
 from Loop import Loop
 import numpy as np
 from Equation import Equation
 
 class LoopAnalyzer:
-    def __init__(self, circuit: Circuit.Circuit):
-        self.circuit: Circuit.Circuit = circuit
+    def __init__(self, circuit: Circuit):
+        self.circuit: Circuit = circuit
 
         self.visited = set()
         self.loops:list[Loop] = []
@@ -74,9 +74,9 @@ class LoopAnalyzer:
             Equation: The equation for the super loop
         """
         if type(current_source).__name__ == "IndependentCurrentSource":
-            eq = Equation({None: -current_source.value})
+            eq:Equation = Equation({None: -current_source.value})
         else:
-            eq = current_source.get_tension_eq(current_source.nodes[0])
+            eq:Equation = current_source.get_tension_eq(current_source.nodes[0]) # type:ignore
 
         for loop in current_source.loops:
             # Check direction: node[0] → node[1] is positive
@@ -93,7 +93,7 @@ class LoopAnalyzer:
         return eq
 
     
-    def get_resistance_matrix(self) -> tuple[np.ndarray, np.ndarray]:
+    def get_resistance_matrix(self) -> tuple[list[Equation], list[Equation]]:
         """
         Returns the resistance matrix and Tension vector for mesh analysis
         Returns:

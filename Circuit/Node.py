@@ -1,5 +1,4 @@
 from __future__ import annotations
-from collections import defaultdict
 from Branch import Branch, TensionSource
 from Equation import Equation
 
@@ -34,7 +33,7 @@ class Node:
         return eq
     
     def get_aux_eqs(self) -> list[Equation]:
-        return [b.get_aux_eq() for b in self.branches if b.get_aux_eq() is not None]
+        return [b.get_aux_eq() for b in self.branches if b.get_aux_eq() is not None] # type:ignore
     
     def unsolve(self):
         if self.gnd:
@@ -44,7 +43,7 @@ class Node:
 
         for b in self.branches:
             if issubclass(type(b), TensionSource):
-                b.i = None
+                b.i = None # type:ignore
     
 
     
