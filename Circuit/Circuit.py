@@ -1,8 +1,8 @@
 import numpy as np
-from Node import Node
-from Branch import Resistor, IndependentCurrentSource, CurrentDependentCurrentSource, TensionDependentCurrentSource, \
+from .Node import Node
+from .Branch import Resistor, IndependentCurrentSource, CurrentDependentCurrentSource, TensionDependentCurrentSource, \
                     IndependentTensionSource, CurrentDependentTensionSource ,TensionDependentTensionSource, TensionSource, Branch
-from Equation import Equation
+from .Equation import Equation
 
 class Circuit:
     def __init__(self):

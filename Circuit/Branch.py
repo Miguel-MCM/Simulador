@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 from abc import ABC, abstractmethod
-from Equation import Equation
+from .Equation import Equation
 
 if TYPE_CHECKING:
     from .Node import Node

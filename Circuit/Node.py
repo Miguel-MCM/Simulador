@@ -1,6 +1,6 @@
 from __future__ import annotations
-from Branch import Branch, TensionSource
-from Equation import Equation
+from .Branch import Branch, TensionSource
+from .Equation import Equation
 
 class Node:
     def __init__(self, circuit, v:float|None=None, gnd:bool=False, name:str = ''):
