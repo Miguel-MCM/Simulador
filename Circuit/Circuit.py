@@ -43,11 +43,9 @@ class Circuit:
         for n in filter(lambda n: not n.solved, self.nodes):
             eqs.append(n.get_currents_eq())
 
-        for solved in filter(lambda n: n.solved, self.nodes):
-            for eq in eqs:
-                if solved in eq:
-                    eq[None] += eq[solved]*solved.v
-                    eq[solved] = 0
+        for eq in eqs:
+            if self['GND'] in eq:
+                eq[self['GND']] = 0
         return eqs
     
     def get_aux_eqs(self) -> list[Equation]:
@@ -55,11 +53,9 @@ class Circuit:
         for n in filter(lambda n: not n.solved, self.nodes):
             for eq in n.get_aux_eqs():
                 eqs.append(eq)
-        for solved in filter(lambda n: n.solved, self.nodes):
-            for eq in eqs:
-                if solved in eq:
-                    eq[None] += eq[solved]*solved.v
-                    eq[solved] = 0
+        for eq in eqs:
+            if self['GND'] in eq:
+                eq[self['GND']] = 0
         return eqs
     
     def solve(self) -> dict:
