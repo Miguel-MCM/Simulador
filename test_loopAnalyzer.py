@@ -1,11 +1,11 @@
 import Circuit
-from LoopAnalyzer import LoopAnalyzer
-from NodalAnalyzer import NodalAnalyzer
+from Circuit.LoopAnalyzer import LoopAnalyzer
+from Circuit.NodalAnalyzer import NodalAnalyzer
 
 def case_1():
     print("case 1")
     """
-    Two loops: Tension source with two resistors (series)
+    One loop: Tension source with two resistors (series)
     """
     circuit = Circuit.Circuit()
     gnd = Circuit.Node(circuit, gnd=True)
