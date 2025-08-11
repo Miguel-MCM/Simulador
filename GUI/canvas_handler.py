@@ -26,6 +26,28 @@ class CanvasHandler:
         canvas.bind("<Motion>", self.on_canvas_motion)
         canvas.bind("<Leave>", self.on_canvas_leave)
     
+    def on_escape_key(self, event: tk.Event, component_manager=None, node_manager=None) -> None:
+        """Manipula a tecla ESC - volta ao modo padrão"""
+        print("DEBUG: ESC capturado! Evento: ", event)
+        if component_manager and node_manager:
+            self.clear_selection(component_manager, node_manager)
+        else:
+            self.reset_to_default_mode()
+    
+    def reset_to_default_mode(self) -> None:
+        """Reseta o estado para o modo padrão"""
+        # Voltar ao modo padrão do cursor
+        self.cursor_mode = "default"
+        
+        # Esconder o preview rectangle
+        self.preview_rectangle.hide()
+        
+        # Resetar modo de conexão
+        self.connection_mode = False
+        self.connection_start = None
+        
+
+    
     def set_cursor_mode(self, mode: str) -> None:
         """Define o modo do cursor"""
         if self.cursor_mode != mode:
@@ -196,6 +218,7 @@ class CanvasHandler:
     def clear_selection(self, component_manager, node_manager) -> None:
         """Limpa a seleção atual"""
         component_manager.set_selected_component(None)
+        node_manager.set_selected_node(None)
         self.connection_start = None
         self.connection_mode = False
         self.preview_rectangle.hide()

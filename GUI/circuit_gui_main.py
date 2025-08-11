@@ -46,6 +46,9 @@ class CircuitGUIMain:
         # Configurar callbacks do canvas
         self.setup_canvas_callbacks()
 
+        self.root.bind("<Escape>", lambda e: self.canvas_handler.on_escape_key(e, self.component_manager, self.node_manager))
+
+
         self.clear_circuit()
     
     def setup_interface(self) -> None:
