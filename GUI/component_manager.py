@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional, Tuple, List
 from .canvas_widget import CircuitCanvas
 
 class ComponentManager:
@@ -11,7 +11,7 @@ class ComponentManager:
         self.components: Dict[str, Dict[str, Any]] = {}
         self.selected_component: Optional[str] = None
     
-    def add_resistor(self, x: int, y: int, node1_name: str, node2_name: str) -> str:
+    def add_resistor(self, x: int, y: int, connection_points: List[Dict[str, Any]]) -> str:
         """Adiciona um resistor ao circuito"""
         # Gerar nome automático para o resistor
         resistor_count = 1
@@ -24,8 +24,7 @@ class ComponentManager:
         self.components[name] = {
             'type': 'resistor',
             'value': 1.0,  # Valor padrão
-            'node1': node1_name,
-            'node2': node2_name,
+            'connections': connection_points,
             'x': x,
             'y': y,
             'canvas_id': None
@@ -189,3 +188,25 @@ class ComponentManager:
         
         ttk.Button(button_frame, text="Salvar", command=save_changes).pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text="Cancelar", command=cancel_changes).pack(side=tk.LEFT, padx=5)
+
+    def update_component_position(self, component_name: str, new_x: int, new_y: int) -> None:
+        """Atualiza a posição de um componente e recalcula as posições dos terminais"""
+        if component_name not in self.components:
+            return
+        
+        component = self.components[component_name]
+        old_x = component['x']
+        old_y = component['y']
+        
+        # Calcular offset de movimento
+        offset_x = new_x - old_x
+        offset_y = new_y - old_y
+        
+        # Atualizar posição do componente
+        component['x'] += offset_x
+        component['y'] += offset_y
+        # Atualizar posições dos terminais se existirem
+        if 'connections' in component:
+            for terminal in component['connections']:
+                terminal['x'] += offset_x
+                terminal['y'] += offset_y

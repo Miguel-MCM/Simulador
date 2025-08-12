@@ -1,7 +1,11 @@
 import tkinter as tk
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, TYPE_CHECKING
 from .canvas_widget import CircuitCanvas
 from .preview_rectangle import PreviewRectangle
+
+if TYPE_CHECKING:
+    from .component_manager import ComponentManager
+    from .node_manager import NodeManager
 
 class CanvasHandler:
     """Gerencia as interações com o canvas"""
@@ -12,6 +16,9 @@ class CanvasHandler:
         self.cursor_mode: str = "default"
         self.connection_mode: bool = False
         self.connection_start: Optional[str] = None
+        
+        # Modo de criação de wire
+        self.wire_creation_start: Optional[Tuple[int, int]] = None
         
         # Configurar bindings do canvas
         self.setup_canvas_bindings()
@@ -44,7 +51,12 @@ class CanvasHandler:
         self.connection_mode = False
         self.connection_start = None
         
-
+        # Resetar modo de criação de wire
+        self.wire_creation_start = None
+        
+        # Limpar preview de wire
+        canvas = self.canvas_widget.get_canvas()
+        canvas.delete("wire_preview")
     
     def set_cursor_mode(self, mode: str) -> None:
         """Define o modo do cursor"""
@@ -53,8 +65,8 @@ class CanvasHandler:
         self.cursor_mode = mode
     
     def on_canvas_click(self, event: tk.Event, 
-                        component_manager, node_manager,
-                        on_component_click, on_node_click) -> None:
+                        component_manager: 'ComponentManager', node_manager: 'NodeManager',
+                        on_component_click, on_node_click, on_wire_click) -> None:
         """Manipula cliques no canvas"""
         x: int = event.x
         y: int = event.y
@@ -64,10 +76,10 @@ class CanvasHandler:
             self.handle_resistor_placement(x, y, component_manager, node_manager)
             return
         elif self.cursor_mode == "voltage_source":
-            self.handle_voltage_source_placement(x, y, component_manager)
+            self.handle_voltage_source_placement(x, y, component_manager, node_manager)
             return
         elif self.cursor_mode == "current_source":
-            self.handle_current_source_placement(x, y, component_manager)
+            self.handle_current_source_placement(x, y, component_manager, node_manager)
             return
         elif self.cursor_mode == "ground":
             self.handle_ground_placement(x, y, node_manager)
@@ -75,65 +87,143 @@ class CanvasHandler:
         elif self.cursor_mode == "update_node":
             node_manager.finish_node_editing()
             return
+        elif self.cursor_mode == "wire_editing":
+            # Modo de edição de wire
+            if node_manager.wire_editing_mode:
+                node_manager.finish_wire_editing(x, y)
+            return
+        elif self.cursor_mode == "wire_creation":
+            # Modo de criação de wire
+            self.handle_wire_creation(x, y, node_manager)
+            return
         
         # Esconder o retângulo de preview e resetar o modo do cursor
         self.preview_rectangle.hide()
         self.cursor_mode = "default"
         
         # Verificar se clicou em um componente ou nó
-        self.handle_canvas_item_click(x, y, on_component_click, on_node_click)
+        self.handle_canvas_item_click(x, y, on_component_click, on_node_click, on_wire_click)
     
-    def handle_resistor_placement(self, x: int, y: int, component_manager, node_manager) -> None:
+    def handle_resistor_placement(self, x: int, y: int, component_manager: 'ComponentManager', node_manager: 'NodeManager') -> None:
         """Manipula a colocação de um resistor"""
         # Obter posições dos terminais
         terminals = self.canvas_widget.get_component_terminals('resistor')
         
         # Calcular posições absolutas dos terminais
-        terminal1_x = x + terminals[0]['x']
-        terminal1_y = y + terminals[0]['y']
-        terminal2_x = x + terminals[1]['x']
-        terminal2_y = y + terminals[1]['y']
-        
-        # Verificar se já existem nós nas posições dos terminais
-        node1_name = node_manager.find_node_at_position(terminal1_x, terminal1_y)
-        node2_name = node_manager.find_node_at_position(terminal2_x, terminal2_y)
-        
-        # Criar nós se não existirem
-        if not node1_name:
-            node1_name = node_manager.add_node_auto(terminal1_x, terminal1_y)
-        
-        if not node2_name:
-            node2_name = node_manager.add_node_auto(terminal2_x, terminal2_y)
+        terminal_1 = { 'x': x + terminals[0]['x'], 'y': y + terminals[0]['y'] }
+        terminal_2 = { 'x': x + terminals[1]['x'], 'y': y + terminals[1]['y'] }
         
         # Adicionar o resistor
-        component_name = component_manager.add_resistor(x, y, node1_name, node2_name)
+        component_name = component_manager.add_resistor(x, y, [terminal_1, terminal_2])
         
-        # Conectar o resistor aos nós
-        component_manager.connect_component_to_node(component_name, node1_name)
-        component_manager.connect_component_to_node(component_name, node2_name)
+        # Criar wires para conectar os terminais
+        # Wire do terminal 1 para a esquerda
+        wire1_name = node_manager.add_wire(terminal_1['x'], terminal_1['y'], terminal_1['x'] - 10, terminal_1['y'])
         
+        # Wire do terminal 2 para a direita
+        wire2_name = node_manager.add_wire(terminal_2['x'], terminal_2['y'], terminal_2['x'] + 10, terminal_2['y'])
+        
+        # Conectar os wires ao componente
+        node_manager.connect_wire_to_component(wire1_name, component_name, 0)
+        node_manager.connect_wire_to_component(wire2_name, component_name, 0)
+
         self.preview_rectangle.hide()
         self.cursor_mode = "default"
     
-    def handle_voltage_source_placement(self, x: int, y: int, component_manager) -> None:
+    def handle_voltage_source_placement(self, x: int, y: int, component_manager, node_manager) -> None:
         """Manipula a colocação de uma fonte de tensão"""
-        component_manager.add_voltage_source(x, y)
+        component_name = component_manager.add_voltage_source(x, y)
+        
+        # Obter posições dos terminais
+        terminals = self.canvas_widget.get_component_terminals('voltage_source')
+        
+        # Calcular posições absolutas dos terminais
+        terminal_1 = { 'x': x + terminals[0]['x'], 'y': y + terminals[0]['y'] }
+        terminal_2 = { 'x': x + terminals[1]['x'], 'y': y + terminals[1]['y'] }
+        
+        # Criar wires para conectar os terminais
+        wire1_name = node_manager.add_wire(terminal_1['x'], terminal_1['y'], terminal_1['x'] - 10, terminal_1['y'])
+        wire2_name = node_manager.add_wire(terminal_2['x'], terminal_2['y'], terminal_2['x'] + 10, terminal_2['y'])
+        
+        # Conectar os wires ao componente
+        node_manager.connect_wire_to_component(wire1_name, component_name, 0)
+        node_manager.connect_wire_to_component(wire2_name, component_name, 1)
+        
         self.cursor_mode = "default"
     
-    def handle_current_source_placement(self, x: int, y: int, component_manager) -> None:
+    def handle_current_source_placement(self, x: int, y: int, component_manager, node_manager) -> None:
         """Manipula a colocação de uma fonte de corrente"""
-        component_manager.add_current_source(x, y)
+        component_name = component_manager.add_current_source(x, y)
+        
+        # Obter posições dos terminais
+        terminals = self.canvas_widget.get_component_terminals('current_source')
+        
+        # Calcular posições absolutas dos terminais
+        terminal_1 = { 'x': x + terminals[0]['x'], 'y': y + terminals[0]['y'] }
+        terminal_2 = { 'x': x + terminals[1]['x'], 'y': y + terminals[1]['y'] }
+        
+        # Criar wires para conectar os terminais
+        wire1_name = node_manager.add_wire(terminal_1['x'], terminal_1['y'], terminal_1['x'] - 10, terminal_1['y'])
+        wire2_name = node_manager.add_wire(terminal_2['x'], terminal_2['y'], terminal_2['x'] + 10, terminal_2['y'])
+        
+        # Conectar os wires ao componente
+        node_manager.connect_wire_to_component(wire1_name, component_name, 0)
+        node_manager.connect_wire_to_component(wire2_name, component_name, 1)
+        
         self.cursor_mode = "default"
     
     def handle_ground_placement(self, x: int, y: int, node_manager) -> None:
         """Manipula a colocação de um nó terra"""
-        node_manager.add_ground(x, y)
+        ground_name = node_manager.add_ground(x, y)
+        
+        # Criar um wire vertical para o terra
+        wire_name = node_manager.add_wire(x, y, x, y + 20)
+        
+        # Conectar o wire ao terra
+        node_manager.connect_wire_to_component(wire_name, ground_name, 0)
+        
         self.cursor_mode = "default"
     
-    def handle_canvas_item_click(self, x: int, y: int, on_component_click, on_node_click) -> None:
+    def handle_wire_creation(self, x: int, y: int, node_manager) -> None:
+        """Manipula a criação de um wire"""
+        # Ajustar coordenadas ao grid
+        x, y = self.canvas_widget.snap_to_grid(x, y)
+        
+        if self.wire_creation_start is None:
+            # Primeiro clique - definir posição inicial
+            self.wire_creation_start = (x, y)
+        else:
+            # Segundo clique - criar o wire
+            start_x, start_y = self.wire_creation_start
+            wire_name = node_manager.add_wire(start_x, start_y, x, y)
+            
+            # Limpar preview
+            canvas = self.canvas_widget.get_canvas()
+            canvas.delete("wire_preview")
+            
+            # Resetar modo
+            self.wire_creation_start = (x, y)
+    
+    def handle_canvas_item_click(self, x: int, y: int, on_component_click, on_node_click, on_wire_click) -> None:
         """Manipula clique em itens do canvas"""
         canvas = self.canvas_widget.get_canvas()
         clicked_item: Tuple[int, ...] = canvas.find_closest(x, y)
+        # Verifica se o item está a mais de 10px de distância; se sim, ignora
+        if clicked_item:
+            coords = canvas.coords(clicked_item[0])
+            # Para linhas e ovais, pega o centro aproximado
+            if len(coords) >= 4:
+                item_x = (coords[0] + coords[2]) / 2
+                item_y = (coords[1] + coords[3]) / 2
+            elif len(coords) >= 2:
+                item_x = coords[0]
+                item_y = coords[1]
+            else:
+                item_x = x
+                item_y = y
+            dist = ((item_x - x) ** 2 + (item_y - y) ** 2) ** 0.5
+            if dist > 10:
+                clicked_item = ()
         if clicked_item:
             tags: Tuple[str, ...] = canvas.gettags(clicked_item[0])
             
@@ -149,6 +239,10 @@ class CanvasHandler:
                 elif tag.startswith("ground_"):
                     ground_node_name: str = tag.split("_", 1)[1]
                     on_node_click(ground_node_name, x, y)
+                    return
+                elif tag.startswith("wire_"):
+                    wire_name: str = tag.split("_", 1)[1]
+                    on_wire_click(wire_name, x, y)
                     return
     
     def on_canvas_double_click(self, event: tk.Event, 
@@ -185,6 +279,7 @@ class CanvasHandler:
             y: int
             x, y = self.canvas_widget.snap_to_grid(event.x, event.y)
             self.canvas_widget.move_component(selected_component, x, y)
+            
     
     def on_canvas_release(self, event: tk.Event, component_manager) -> None:
         """Manipula soltar no canvas"""
@@ -197,12 +292,37 @@ class CanvasHandler:
         elif node_manager.get_selected_node():
             # Atualizar linhas temporárias durante edição de nó
             node_manager.update_temp_node_lines(event.x, event.y)
+        elif self.cursor_mode == "wire_creation" and self.wire_creation_start:
+            # Mostrar preview do wire sendo criado
+            self.show_wire_preview(event.x, event.y)
+        elif self.cursor_mode == "wire_editing":
+            node_manager.update_wire_editing(event.x, event.y)
         else:
             self.preview_rectangle.hide()
+    
+    def show_wire_preview(self, x: int, y: int) -> None:
+        """Mostra preview do wire sendo criado"""
+        if self.wire_creation_start:
+            start_x, start_y = self.wire_creation_start
+            
+            # Ajustar coordenadas ao grid
+            x, y = self.canvas_widget.snap_to_grid(x, y)
+            
+            # Limpar preview anterior
+            canvas = self.canvas_widget.get_canvas()
+            canvas.delete("wire_preview")
+            
+            # Desenhar preview
+            canvas.create_line(start_x, start_y, x, y, fill="red", width=2, 
+                             dash=(5, 5), tags="wire_preview")
     
     def on_canvas_leave(self, event: tk.Event) -> None:
         """Manipula quando o mouse sai do canvas"""
         self.preview_rectangle.hide()
+        
+        # Limpar preview de wire
+        canvas = self.canvas_widget.get_canvas()
+        canvas.delete("wire_preview")
     
     def toggle_connection_mode(self) -> None:
         """Alterna o modo de conexão"""
@@ -219,11 +339,20 @@ class CanvasHandler:
         node_manager.set_selected_node(None)
         self.connection_start = None
         self.connection_mode = False
+        self.wire_creation_start = None
         self.preview_rectangle.hide()
+        
+        # Limpar preview de wire
+        canvas = self.canvas_widget.get_canvas()
+        canvas.delete("wire_preview")
         
         # Sair do modo de edição de nó se estiver ativo
         if node_manager.node_editing_mode:
             node_manager.exit_node_editing_mode()
+        
+        # Sair do modo de edição de wire se estiver ativo
+        if node_manager.wire_editing_mode:
+            node_manager.exit_wire_editing_mode()
     
     def get_preview_rectangle(self) -> PreviewRectangle:
         """Retorna o retângulo de preview"""

@@ -4,8 +4,11 @@ import math
 from typing import Dict, Any, Optional, Tuple, List, TYPE_CHECKING
 import json
 
+if TYPE_CHECKING:
+    from GUI.circuit_gui import CircuitGui
+
 class CircuitCanvas:
-    def __init__(self, parent: ttk.Frame, circuit_gui=None) -> None:
+    def __init__(self, parent: ttk.Frame, circuit_gui:'CircuitGui') -> None:
         self.parent = parent
         self.circuit_gui = circuit_gui
         
@@ -67,6 +70,28 @@ class CircuitCanvas:
         # Texto do nome
         text_id: int = self.canvas.create_text(x, y+15, text=name, font=("Arial", 10), tags=f"node_{name}")
     
+    def draw_wire(self, name: str, x1: int, y1: int, x2: int, y2: int) -> None:
+        """Desenha um fio no canvas"""
+        x1, y1 = self.snap_to_grid(x1, y1)
+        x2, y2 = self.snap_to_grid(x2, y2)
+        
+        # Linha do fio
+        wire_id: int = self.canvas.create_line(x1, y1, x2, y2, fill="black", width=2, tags=f"wire_{name}")
+        # pontos de conexão
+        self.canvas.create_oval(x1-2, y1-2, x1+2, y1+2, fill="black", tags=[f"wire_terminal_1_{name}", f"wire_{name}"])
+        self.canvas.create_oval(x2-2, y2-2, x2+2, y2+2, fill="black", tags=[f"wire_terminal_2_{name}", f"wire_{name}"])
+    
+    def redraw_wire(self, name: str, x1: int, y1: int, x2: int, y2: int) -> None:
+        """Redesenha um fio existente no canvas"""
+        x1, y1 = self.snap_to_grid(x1, y1)
+        x2, y2 = self.snap_to_grid(x2, y2)
+        
+        # Remover wire antigo
+        self.canvas.delete(f"wire_{name}")
+        
+        # Desenhar novo wire
+        self.draw_wire(name, x1, y1, x2, y2)
+    
 
     
     def draw_component(self, name: str, x: int, y: int, component_data: Optional[Dict[str, Any]] = None) -> None:
@@ -123,13 +148,26 @@ class CircuitCanvas:
         
         self.circuit_gui.nodes[name].update({'canvas_id': ground_id, 'text_id': text_id, 'x': x, 'y': y})
     
-    def draw_connection(self, x1: int, y1: int, x2: int, y2: int) -> None:
-        """Desenha uma linha de conexão"""
-        self.canvas.create_line(x1, y1, x2, y2, fill="black", width=2, tags="connection")
-    
     def move_component(self, component_name: str, x: int, y: int) -> None:
         """Move um componente para uma nova posição"""
         x, y = self.snap_to_grid(x, y)
+        
+        # Obter a posição atual do componente
+        if not self.circuit_gui or not hasattr(self.circuit_gui, 'component_manager'):
+            return
+        
+        component_manager = self.circuit_gui.component_manager
+        component_data = component_manager.get_component(component_name)
+        
+        if not component_data:
+            return
+        
+        old_x = component_data['x']
+        old_y = component_data['y']
+        
+        # Calcular offset de movimento
+        offset_x = x - old_x
+        offset_y = y - old_y
         
         # Encontrar todos os elementos do componente
         component_items = self.canvas.find_withtag(f"component_{component_name}")
@@ -137,21 +175,24 @@ class CircuitCanvas:
         if not component_items:
             return
         
-        # Calcular offset de movimento
-        # Assumir que o primeiro item é a posição de referência
-        first_item = component_items[0]
-        current_coords = self.canvas.coords(first_item)
+        # Mover todos os elementos do componente
+        for item in component_items:
+            self.canvas.move(item, offset_x, offset_y)
         
-        if len(current_coords) >= 2:
-            current_x = current_coords[0]
-            current_y = current_coords[1]
-            
-            offset_x = x - current_x
-            offset_y = y - current_y
-            
-            # Mover todos os elementos do componente
-            for item in component_items:
-                self.canvas.move(item, offset_x, offset_y)
+        # Atualizar posição no component_manager
+        component_manager.update_component_position(component_name, x, y)
+        
+        # Mover os wires conectados aos terminais
+        self.move_connected_wires(component_name, offset_x, offset_y)
+    
+    def move_connected_wires(self, component_name: str, offset_x: int, offset_y: int) -> None:
+        """Move os wires conectados aos terminais de um componente"""
+        if not self.circuit_gui or not hasattr(self.circuit_gui, 'node_manager'):
+            return
+        component = self.circuit_gui.component_manager.get_component(component_name)
+        terminals = self.get_component_terminals(component['type'])
+        for terminal in terminals:
+            self.circuit_gui.node_manager.update_wire_positions_for_component(component_name, offset_x, offset_y)
     
     def redraw_connections(self) -> None:
         """Redesenha todas as conexões do circuito"""

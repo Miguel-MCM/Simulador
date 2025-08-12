@@ -54,7 +54,7 @@ class CircuitGUIMain:
     def setup_interface(self) -> None:
         """Configura a interface de usuário"""
         # Adicionar botões de componentes
-        self.ui_components.add_component_button("Nó", self.add_node)
+        self.ui_components.add_component_button("Criar Wire", self.add_node)
         self.ui_components.add_component_button("Resistor", lambda: self.canvas_handler.set_cursor_mode("resistor"))
         self.ui_components.add_component_button("Fonte de Tensão", lambda: self.canvas_handler.set_cursor_mode("voltage_source"))
         self.ui_components.add_component_button("Fonte de Corrente", lambda: self.canvas_handler.set_cursor_mode("current_source"))
@@ -62,8 +62,9 @@ class CircuitGUIMain:
         
         # Adicionar botões de conexões
         self.ui_components.add_connection_button("Conectar Componentes", self.canvas_handler.toggle_connection_mode)
+        self.ui_components.add_connection_button("Criar Wire Manual", self.start_wire_creation)
         self.ui_components.add_connection_button("Limpar Seleção", lambda: self.canvas_handler.clear_selection(self.component_manager, self.node_manager))
-        self.ui_components.add_connection_button("Cancelar Edição de Nó", self.node_manager.cancel_node_editing)
+        self.ui_components.add_connection_button("Cancelar Edição", self.node_manager.cancel_node_editing)
         
         # Adicionar botões de análise
         self.ui_components.add_analysis_button("Resolver Circuito", self.solve_circuit)
@@ -83,17 +84,20 @@ class CircuitGUIMain:
         # Configurar canvas com callbacks personalizados
         canvas = self.canvas_widget.get_canvas()
         canvas.bind("<Button-1>", lambda e: original_click(e, self.component_manager, self.node_manager, 
-                                                          self.handle_component_click, self.handle_node_click))
+                                                          self.handle_component_click, self.handle_node_click, self.handle_wire_click))
         canvas.bind("<Double-Button-1>", lambda e: original_double_click(e, self.component_manager, self.node_manager))
         canvas.bind("<B1-Motion>", lambda e: original_drag(e, self.component_manager))
         canvas.bind("<ButtonRelease-1>", lambda e: original_release(e, self.component_manager))
         canvas.bind("<Motion>", lambda e: original_motion(e, self.node_manager))
     
     def add_node(self) -> None:
-        """Adiciona um nó ao circuito"""
-        # Usar posição padrão (será ajustada pelo usuário)
-        self.node_manager.add_node(300, 200)
+        """Adiciona um nó ao circuito (agora cria um wire)"""
+        self.canvas_handler.set_cursor_mode("wire_creation")
         self.update_info()
+    
+    def start_wire_creation(self) -> None:
+        """Inicia o modo de criação de wire"""
+        self.canvas_handler.set_cursor_mode("wire_creation")
     
     def handle_component_click(self, component_name: str, x: int, y: int) -> None:
         """Manipula clique em componente"""
@@ -101,32 +105,67 @@ class CircuitGUIMain:
         self.node_manager.set_selected_node(None)
         self.update_info()
     
+    def handle_wire_click(self, wire_name: str, x: int, y: int) -> None:
+        """Manipula clique em fio"""
+        x, y = self.canvas_widget.snap_to_grid(x, y)
+        if wire_name.startswith("terminal_"):
+            terminal_num = int(wire_name.split("_")[1])
+            wire_name = wire_name.split("_", 2)[2]
+            self.node_manager.start_wire_editing(wire_name, terminal_num, x, y)
+        
+        self.node_manager.set_selected_node(None)
+        self.component_manager.set_selected_component(None)
+        self.update_info()
+    
     def handle_node_click(self, node_name: str, x: int, y: int) -> None:
-        """Manipula clique em nó"""
-        self.node_manager.start_node_editing(node_name)
+        """Manipula clique em nó ou wire"""
+        node_data = self.node_manager.get_node(node_name)
+        
+        if node_data and node_data['type'] == 'wire':
+            # Para wires, mostrar informações e permitir edição
+            info = f"Wire: {node_name}\n"
+            info += f"Posição: ({node_data['x1']}, {node_data['y1']}) -> ({node_data['x2']}, {node_data['y2']})\n"
+            info += f"Duplo clique para editar propriedades\n"
+            info += f"Clique simples para selecionar"
+            
+            self.node_manager.set_selected_node(node_name)
+        else:
+            # Para nós normais, iniciar edição
+            info = f"Nó: {node_name}\n"
+            info += f"Tipo: {node_data['type']}\n"
+            info += f"Posição: ({node_data['x']}, {node_data['y']})\n"
+            info += f"Duplo clique para editar propriedades"
+            
+            self.node_manager.start_node_editing(node_name)
+        
         self.component_manager.set_selected_component(None)
         self.update_info()
     
     def solve_circuit(self) -> None:
         """Resolve o circuito"""
-        # Validar circuito
-        is_valid, message = self.circuit_analyzer.validate_circuit(
-            self.node_manager.get_all_nodes(),
-            self.component_manager.get_all_components()
-        )
+        # Por enquanto, apenas mostrar mensagem informativa
+        # A implementação da análise do circuito será feita posteriormente
+        messagebox.showinfo("Análise do Circuito", 
+                           "A funcionalidade de análise do circuito será implementada posteriormente.\n"
+                           "Por enquanto, o sistema suporta a criação e edição de wires e componentes.")
         
-        if not is_valid:
-            messagebox.showerror("Erro", message)
-            return
-        
-        # Resolver circuito
-        solution = self.circuit_analyzer.solve_circuit(
-            self.node_manager.get_all_nodes(),
-            self.component_manager.get_all_components()
-        )
-        
-        if solution:
-            self.circuit_analyzer.show_solution(solution, self.root)
+        # TODO: Implementar análise do circuito com wires
+        # is_valid, message = self.circuit_analyzer.validate_circuit(
+        #     self.node_manager.get_all_nodes(),
+        #     self.component_manager.get_all_components()
+        # )
+        # 
+        # if not is_valid:
+        #     messagebox.showerror("Erro", message)
+        #     return
+        # 
+        # solution = self.circuit_analyzer.solve_circuit(
+        #     self.node_manager.get_all_nodes(),
+        #     self.component_manager.get_all_components()
+        # )
+        # 
+        # if solution:
+        #     self.circuit_analyzer.show_solution(solution, self.root)
     
     def clear_circuit(self) -> None:
         """Limpa o circuito"""
@@ -134,14 +173,26 @@ class CircuitGUIMain:
         self.node_manager.clear_nodes()
         self.canvas_widget.clear_canvas()
         self.canvas_handler.get_preview_rectangle().hide()
+        
+        # Resetar modo de cursor para padrão
+        self.canvas_handler.reset_to_default_mode()
+        
+        # Limpar preview de wire se existir
+        canvas = self.canvas_widget.get_canvas()
+        canvas.delete("wire_preview")
+        
         self.update_info()
     
     def save_circuit(self) -> None:
         """Salva o circuito"""
-        self.file_manager.save_circuit(
-            self.node_manager.get_all_nodes(),
-            self.component_manager.get_all_components()
-        )
+        try:
+            self.file_manager.save_circuit(
+                self.node_manager.get_all_nodes(),  # Inclui nós e wires
+                self.component_manager.get_all_components()
+            )
+            messagebox.showinfo("Sucesso", "Circuito salvo com sucesso!")
+        except Exception as e:
+            messagebox.showerror("Erro", f"Erro ao salvar circuito: {str(e)}")
     
     def load_circuit(self) -> None:
         """Carrega um circuito"""
@@ -152,11 +203,14 @@ class CircuitGUIMain:
             # Limpar circuito atual
             self.clear_circuit()
             
-            # Carregar nós
+            # Carregar nós e wires
             for name, node_data in nodes.items():
                 self.node_manager.nodes[name] = node_data
                 if node_data['type'] == 'ground':
                     self.canvas_widget.draw_ground(name, node_data['x'], node_data['y'])
+                elif node_data['type'] == 'wire':
+                    self.canvas_widget.draw_wire(name, node_data['x1'], node_data['y1'], 
+                                               node_data['x2'], node_data['y2'])
                 else:
                     self.canvas_widget.draw_node(name, node_data['x'], node_data['y'])
             
@@ -167,28 +221,49 @@ class CircuitGUIMain:
             
             # Redesenhar conexões
             self.canvas_widget.redraw_connections()
+            
+            # Atualizar informações
             self.update_info()
+            
+            messagebox.showinfo("Sucesso", "Circuito carregado com sucesso!")
     
     def update_info(self) -> None:
         """Atualiza as informações na área de texto"""
         nodes = self.node_manager.get_all_nodes()
+        wires = self.node_manager.get_wires()
+        actual_nodes = self.node_manager.get_nodes()
         components = self.component_manager.get_all_components()
         
         info: str = f"Circuit Info:\n"
-        info += f"Nós: {len(nodes)}\n"
+        info += f"Nós: {len(actual_nodes)}\n"
+        info += f"Wires: {len(wires)}\n"
         info += f"Componentes: {len(components)}\n\n"
         
         info += "Nós:\n"
-        for name, node in nodes.items():
+        for name, node in actual_nodes.items():
             info += f"  {name}: {node['type']}\n"
             if node.get('gnd', False):
                 info += f"    Terra (GND)\n"
         
+        info += "\nWires:\n"
+        for name, wire in wires.items():
+            info += f"  {name}: ({wire['x1']}, {wire['y1']}) -> ({wire['x2']}, {wire['y2']})\n"
+            connections = wire.get('connections', [])
+            if connections:
+                info += f"    Conectado a: "
+                for conn in connections:
+                    info += f"{conn['component']}({conn['terminal']}) "
+                info += "\n"
+            else:
+                info += f"    Sem conexões (livre para conectar)\n"
+        
         info += "\nComponentes:\n"
         for name, component in components.items():
             info += f"  {name}: {component['type']} = {component['value']}\n"
-            if component['node1']:
+            if component.get('node1'):
                 info += f"    Conectado a: {component['node1']} e {component['node2']}\n"
+            else:
+                info += f"    Sem conexões\n"
         
         self.ui_components.update_info(info)
     
