@@ -28,11 +28,9 @@ class CanvasHandler:
     
     def on_escape_key(self, event: tk.Event, component_manager=None, node_manager=None) -> None:
         """Manipula a tecla ESC - volta ao modo padrão"""
-        print("DEBUG: ESC capturado! Evento: ", event)
         if component_manager and node_manager:
             self.clear_selection(component_manager, node_manager)
-        else:
-            self.reset_to_default_mode()
+        self.reset_to_default_mode()
     
     def reset_to_default_mode(self) -> None:
         """Reseta o estado para o modo padrão"""
