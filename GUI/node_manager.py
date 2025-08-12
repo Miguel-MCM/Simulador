@@ -38,7 +38,6 @@ class NodeManager:
         """Inicia o modo de edição de wire"""
         terminal_num = 1 if terminal_num == 2 else 2
         if wire_name in self.nodes and self.nodes[wire_name]['type'] == 'wire':
-            print(terminal_num)
             if ( 0 if terminal_num == 2 else 1) in [connection['terminal'] for connection in self.nodes[wire_name]['connections']]:
                 return
 

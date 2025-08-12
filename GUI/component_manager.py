@@ -11,7 +11,7 @@ class ComponentManager:
         self.components: Dict[str, Dict[str, Any]] = {}
         self.selected_component: Optional[str] = None
     
-    def add_resistor(self, x: int, y: int, connection_points: List[Dict[str, Any]]) -> str:
+    def add_resistor(self, x: int, y: int, connection_points: List[Dict[str, Any]], rotation: int = 0) -> str:
         """Adiciona um resistor ao circuito"""
         # Gerar nome automático para o resistor
         resistor_count = 1
@@ -27,6 +27,7 @@ class ComponentManager:
             'connections': connection_points,
             'x': x,
             'y': y,
+            'rotation': rotation,  # Rotação em graus (0, 90, 180, 270)
             'canvas_id': None
         }
         
@@ -35,7 +36,7 @@ class ComponentManager:
         
         return name
     
-    def add_voltage_source(self, x: int, y: int) -> Optional[str]:
+    def add_voltage_source(self, x: int, y: int, rotation: int = 0) -> Optional[str]:
         """Adiciona uma fonte de tensão ao circuito"""
         name: Optional[str] = simpledialog.askstring("Fonte de Tensão", "Nome da fonte:")
         if name:
@@ -48,13 +49,14 @@ class ComponentManager:
                     'node2': None,
                     'x': x,
                     'y': y,
+                    'rotation': rotation,  # Rotação em graus
                     'canvas_id': None
                 }
                 self.canvas_widget.draw_component(name, x, y, self.components[name])
                 return name
         return None
     
-    def add_current_source(self, x: int, y: int) -> Optional[str]:
+    def add_current_source(self, x: int, y: int, rotation: int = 0) -> Optional[str]:
         """Adiciona uma fonte de corrente ao circuito"""
         name: Optional[str] = simpledialog.askstring("Fonte de Corrente", "Nome da fonte:")
         if name:
@@ -67,6 +69,7 @@ class ComponentManager:
                     'node2': None,
                     'x': x,
                     'y': y,
+                    'rotation': rotation,  # Rotação em graus
                     'canvas_id': None
                 }
                 self.canvas_widget.draw_component(name, x, y, self.components[name])
@@ -203,8 +206,9 @@ class ComponentManager:
         offset_y = new_y - old_y
         
         # Atualizar posição do componente
-        component['x'] += offset_x
-        component['y'] += offset_y
+        component['x'] = new_x
+        component['y'] = new_y
+        
         # Atualizar posições dos terminais se existirem
         if 'connections' in component:
             for terminal in component['connections']:

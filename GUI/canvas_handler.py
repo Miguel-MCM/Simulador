@@ -1,5 +1,5 @@
 import tkinter as tk
-from typing import Optional, Tuple, List, TYPE_CHECKING
+from typing import Optional, Tuple, List, TYPE_CHECKING, Dict
 from .canvas_widget import CircuitCanvas
 from .preview_rectangle import PreviewRectangle
 
@@ -38,13 +38,17 @@ class CanvasHandler:
         if component_manager and node_manager:
             self.clear_selection(component_manager, node_manager)
         self.reset_to_default_mode()
+        
+        # Resetar rotação do preview
+        if hasattr(self.preview_rectangle, 'current_rotation'):
+            self.preview_rectangle.current_rotation = 0
     
     def reset_to_default_mode(self) -> None:
         """Reseta o estado para o modo padrão"""
         # Voltar ao modo padrão do cursor
         self.cursor_mode = "default"
         
-        # Esconder o preview rectangle
+        # Esconder o preview rectangle e resetar rotação
         self.preview_rectangle.hide()
         
         # Resetar modo de conexão
@@ -62,6 +66,9 @@ class CanvasHandler:
         """Define o modo do cursor"""
         if self.cursor_mode != mode:
             self.preview_rectangle.hide()
+            # Resetar rotação quando mudar de modo
+            if hasattr(self.preview_rectangle, 'current_rotation'):
+                self.preview_rectangle.current_rotation = 0
         self.cursor_mode = mode
     
     def on_canvas_click(self, event: tk.Event, 
@@ -74,12 +81,21 @@ class CanvasHandler:
         # Verificar modo do cursor
         if self.cursor_mode == "resistor":
             self.handle_resistor_placement(x, y, component_manager, node_manager)
+            # Resetar rotação após colocar o componente
+            if hasattr(self.preview_rectangle, 'current_rotation'):
+                self.preview_rectangle.current_rotation = 0
             return
         elif self.cursor_mode == "voltage_source":
             self.handle_voltage_source_placement(x, y, component_manager, node_manager)
+            # Resetar rotação após colocar o componente
+            if hasattr(self.preview_rectangle, 'current_rotation'):
+                self.preview_rectangle.current_rotation = 0
             return
         elif self.cursor_mode == "current_source":
             self.handle_current_source_placement(x, y, component_manager, node_manager)
+            # Resetar rotação após colocar o componente
+            if hasattr(self.preview_rectangle, 'current_rotation'):
+                self.preview_rectangle.current_rotation = 0
             return
         elif self.cursor_mode == "ground":
             self.handle_ground_placement(x, y, node_manager)
@@ -104,72 +120,71 @@ class CanvasHandler:
         # Verificar se clicou em um componente ou nó
         self.handle_canvas_item_click(x, y, on_component_click, on_node_click, on_wire_click)
     
+    def on_rotate_key(self, event: tk.Event) -> None:
+        """Manipula a tecla R para rotação do componente preview"""
+        # Só permitir rotação se estiver em modo de colocação de componente
+        if self.cursor_mode in ["resistor", "voltage_source", "current_source"]:
+            self.preview_rectangle.rotate()
+    
     def handle_resistor_placement(self, x: int, y: int, component_manager: 'ComponentManager', node_manager: 'NodeManager') -> None:
         """Manipula a colocação de um resistor"""
-        # Obter posições dos terminais
-        terminals = self.canvas_widget.get_component_terminals('resistor')
+        # Obter rotação atual do preview
+        rotation = self.preview_rectangle.get_rotation()
+        
+        # Obter posições dos terminais com rotação aplicada
+        terminals = self.canvas_widget.get_component_terminals('resistor', rotation)
         
         # Calcular posições absolutas dos terminais
         terminal_1 = { 'x': x + terminals[0]['x'], 'y': y + terminals[0]['y'] }
         terminal_2 = { 'x': x + terminals[1]['x'], 'y': y + terminals[1]['y'] }
         
-        # Adicionar o resistor
-        component_name = component_manager.add_resistor(x, y, [terminal_1, terminal_2])
+        # Adicionar o resistor com rotação
+        component_name = component_manager.add_resistor(x, y, [terminal_1, terminal_2], rotation)
         
-        # Criar wires para conectar os terminais
-        # Wire do terminal 1 para a esquerda
-        wire1_name = node_manager.add_wire(terminal_1['x'], terminal_1['y'], terminal_1['x'] - 10, terminal_1['y'])
-        
-        # Wire do terminal 2 para a direita
-        wire2_name = node_manager.add_wire(terminal_2['x'], terminal_2['y'], terminal_2['x'] + 10, terminal_2['y'])
-        
-        # Conectar os wires ao componente
-        node_manager.connect_wire_to_component(wire1_name, component_name, 0)
-        node_manager.connect_wire_to_component(wire2_name, component_name, 0)
+        # Criar wires para conectar os terminais na direção correta
+        self._create_wires_for_terminals(terminal_1, terminal_2, rotation, node_manager, component_name)
 
         self.preview_rectangle.hide()
         self.cursor_mode = "default"
     
     def handle_voltage_source_placement(self, x: int, y: int, component_manager, node_manager) -> None:
         """Manipula a colocação de uma fonte de tensão"""
-        component_name = component_manager.add_voltage_source(x, y)
+        # Obter rotação atual do preview
+        rotation = self.preview_rectangle.get_rotation()
         
-        # Obter posições dos terminais
-        terminals = self.canvas_widget.get_component_terminals('voltage_source')
+        component_name = component_manager.add_voltage_source(x, y, rotation)
+        
+        # Obter posições dos terminais com rotação aplicada
+        terminals = self.canvas_widget.get_component_terminals('voltage_source', rotation)
         
         # Calcular posições absolutas dos terminais
         terminal_1 = { 'x': x + terminals[0]['x'], 'y': y + terminals[0]['y'] }
         terminal_2 = { 'x': x + terminals[1]['x'], 'y': y + terminals[1]['y'] }
         
-        # Criar wires para conectar os terminais
-        wire1_name = node_manager.add_wire(terminal_1['x'], terminal_1['y'], terminal_1['x'] - 10, terminal_1['y'])
-        wire2_name = node_manager.add_wire(terminal_2['x'], terminal_2['y'], terminal_2['x'] + 10, terminal_2['y'])
+        # Criar wires para conectar os terminais na direção correta
+        self._create_wires_for_terminals(terminal_1, terminal_2, rotation, node_manager, component_name)
         
-        # Conectar os wires ao componente
-        node_manager.connect_wire_to_component(wire1_name, component_name, 0)
-        node_manager.connect_wire_to_component(wire2_name, component_name, 1)
-        
+        self.preview_rectangle.hide()
         self.cursor_mode = "default"
     
     def handle_current_source_placement(self, x: int, y: int, component_manager, node_manager) -> None:
         """Manipula a colocação de uma fonte de corrente"""
-        component_name = component_manager.add_current_source(x, y)
+        # Obter rotação atual do preview
+        rotation = self.preview_rectangle.get_rotation()
         
-        # Obter posições dos terminais
-        terminals = self.canvas_widget.get_component_terminals('current_source')
+        component_name = component_manager.add_current_source(x, y, rotation)
+        
+        # Obter posições dos terminais com rotação aplicada
+        terminals = self.canvas_widget.get_component_terminals('current_source', rotation)
         
         # Calcular posições absolutas dos terminais
         terminal_1 = { 'x': x + terminals[0]['x'], 'y': y + terminals[0]['y'] }
         terminal_2 = { 'x': x + terminals[1]['x'], 'y': y + terminals[1]['y'] }
         
-        # Criar wires para conectar os terminais
-        wire1_name = node_manager.add_wire(terminal_1['x'], terminal_1['y'], terminal_1['x'] - 10, terminal_1['y'])
-        wire2_name = node_manager.add_wire(terminal_2['x'], terminal_2['y'], terminal_2['x'] + 10, terminal_2['y'])
+        # Criar wires para conectar os terminais na direção correta
+        self._create_wires_for_terminals(terminal_1, terminal_2, rotation, node_manager, component_name)
         
-        # Conectar os wires ao componente
-        node_manager.connect_wire_to_component(wire1_name, component_name, 0)
-        node_manager.connect_wire_to_component(wire2_name, component_name, 1)
-        
+        self.preview_rectangle.hide()
         self.cursor_mode = "default"
     
     def handle_ground_placement(self, x: int, y: int, node_manager) -> None:
@@ -286,9 +301,13 @@ class CanvasHandler:
         component_manager.set_selected_component(None)
     
     def on_canvas_motion(self, event: tk.Event, node_manager) -> None:
-        """Manipula movimento do mouse no canvas"""
+        """Manipula o movimento do mouse no canvas"""
         if self.cursor_mode == "resistor":
             self.preview_rectangle.update("resistor", event.x, event.y)
+        elif self.cursor_mode == "voltage_source":
+            self.preview_rectangle.update("voltage_source", event.x, event.y)
+        elif self.cursor_mode == "current_source":
+            self.preview_rectangle.update("current_source", event.x, event.y)
         elif node_manager.get_selected_node():
             # Atualizar linhas temporárias durante edição de nó
             node_manager.update_temp_node_lines(event.x, event.y)
@@ -353,8 +372,40 @@ class CanvasHandler:
         # Sair do modo de edição de wire se estiver ativo
         if node_manager.wire_editing_mode:
             node_manager.exit_wire_editing_mode()
+        
+        # Resetar rotação do preview
+        if hasattr(self.preview_rectangle, 'current_rotation'):
+            self.preview_rectangle.current_rotation = 0
     
     def get_preview_rectangle(self) -> PreviewRectangle:
         """Retorna o retângulo de preview"""
         return self.preview_rectangle
+
+    def _create_wires_for_terminals(self, terminal_1: Dict[str, int], terminal_2: Dict[str, int], rotation: int, node_manager: 'NodeManager', component_name: str) -> None:
+        """Cria wires para conectar os terminais na direção correta baseada na rotação"""
+        # Determinar direção dos wires baseada na rotação
+        if rotation == 0:  # 0° - horizontal
+            # Wire do terminal 1 para a esquerda
+            wire1_name = node_manager.add_wire(terminal_1['x'], terminal_1['y'], terminal_1['x'] - 10, terminal_1['y'])
+            # Wire do terminal 2 para a direita
+            wire2_name = node_manager.add_wire(terminal_2['x'], terminal_2['y'], terminal_2['x'] + 10, terminal_2['y'])
+        elif rotation == 90:  # 90° - vertical para cima
+            # Wire do terminal 1 para baixo
+            wire1_name = node_manager.add_wire(terminal_1['x'], terminal_1['y'], terminal_1['x'], terminal_1['y'] + 10)
+            # Wire do terminal 2 para cima
+            wire2_name = node_manager.add_wire(terminal_2['x'], terminal_2['y'], terminal_2['x'], terminal_2['y'] - 10)
+        elif rotation == 180:  # 180° - horizontal invertido
+            # Wire do terminal 1 para a direita
+            wire1_name = node_manager.add_wire(terminal_1['x'], terminal_1['y'], terminal_1['x'] + 10, terminal_1['y'])
+            # Wire do terminal 2 para a esquerda
+            wire2_name = node_manager.add_wire(terminal_2['x'], terminal_2['y'], terminal_2['x'] - 10, terminal_2['y'])
+        else:  # 270° - vertical para baixo
+            # Wire do terminal 1 para cima
+            wire1_name = node_manager.add_wire(terminal_1['x'], terminal_1['y'], terminal_1['x'], terminal_1['y'] - 10)
+            # Wire do terminal 2 para baixo
+            wire2_name = node_manager.add_wire(terminal_2['x'], terminal_2['y'], terminal_2['x'], terminal_2['y'] + 10)
+        
+        # Conectar os wires ao componente
+        node_manager.connect_wire_to_component(wire1_name, component_name, 0)
+        node_manager.connect_wire_to_component(wire2_name, component_name, 1)
 

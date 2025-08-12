@@ -47,6 +47,8 @@ class CircuitGUIMain:
         self.setup_canvas_callbacks()
 
         self.root.bind("<Escape>", lambda e: self.canvas_handler.on_escape_key(e, self.component_manager, self.node_manager))
+        self.root.bind("<Key-r>", lambda e: self.canvas_handler.on_rotate_key(e))
+        self.root.bind("<Key-R>", lambda e: self.canvas_handler.on_rotate_key(e))
 
 
         self.clear_circuit()

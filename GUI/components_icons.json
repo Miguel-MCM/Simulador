@@ -78,5 +78,63 @@
       ]
       }
     ]
+  },
+  "voltage_source": {
+    "width": 40,
+    "height": 40,
+    "terminals": [
+      {"x": 0, "y": 20},
+      {"x": 40, "y": 20}
+    ],
+    "icon": [
+      {
+        "type": "circle",
+        "center": {"x": 20, "y": 20},
+        "radius": 15
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 20, "y": 5},
+          {"x": 20, "y": 35}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 5, "y": 20},
+          {"x": 35, "y": 20}
+        ]
+      }
+    ]
+  },
+  "current_source": {
+    "width": 40,
+    "height": 40,
+    "terminals": [
+      {"x": 0, "y": 20},
+      {"x": 40, "y": 20}
+    ],
+    "icon": [
+      {
+        "type": "circle",
+        "center": {"x": 20, "y": 20},
+        "radius": 15
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 20, "y": 5},
+          {"x": 20, "y": 35}
+        ]
+      },
+      {
+        "type": "arrow",
+        "points": [
+          {"x": 15, "y": 20},
+          {"x": 25, "y": 20}
+        ]
+      }
+    ]
   }
 }

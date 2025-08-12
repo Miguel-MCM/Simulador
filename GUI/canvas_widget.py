@@ -38,9 +38,38 @@ class CircuitCanvas:
         # Grid no canvas
         self.draw_grid()
     
-    def get_component_terminals(self, component_type: str) -> List[Dict[str, Any]]:
-        """Retorna os terminais de um componente"""
-        return self.component_icons[component_type]['terminals']
+    def get_component_terminals(self, component_type: str, rotation: int = 0) -> List[Dict[str, Any]]:
+        """Retorna os terminais de um componente com rotação aplicada (0, 90, 180, 270 graus), origem no canto superior esquerdo"""
+        if component_type not in self.component_icons:
+            return []
+        
+        terminals = self.component_icons[component_type]['terminals'].copy()
+        width = self.component_icons[component_type]['width']
+        height = self.component_icons[component_type]['height']
+
+        # Normaliza rotação para 0, 90, 180, 270
+        rotation = rotation % 360
+        if rotation not in (0, 90, 180, 270):
+            raise ValueError("Rotação deve ser 0, 90, 180 ou 270 graus")
+
+        rotated_terminals = []
+        for terminal in terminals:
+            x, y = terminal['x'], terminal['y']
+            if rotation == 0:
+                rx, ry = x, y
+            elif rotation == 90:
+                rx = height - y
+                ry = x
+            elif rotation == 180:
+                rx = width - x
+                ry = height - y
+            elif rotation == 270:
+                rx = y
+                ry = width - x
+            rotated_terminals.append({'x': rx, 'y': ry})
+        return rotated_terminals
+        
+        return rotated_terminals
     
     def draw_grid(self) -> None:
         """Desenha o grid de fundo"""
@@ -92,10 +121,8 @@ class CircuitCanvas:
         # Desenhar novo wire
         self.draw_wire(name, x1, y1, x2, y2)
     
-
-    
     def draw_component(self, name: str, x: int, y: int, component_data: Optional[Dict[str, Any]] = None) -> None:
-        """Desenha um componente no canvas"""
+        """Desenha um componente no canvas com suporte a rotação"""
         x, y = self.snap_to_grid(x, y)
         
         # Se não foi fornecido component_data, tentar obter do circuit_gui (compatibilidade)
@@ -104,35 +131,182 @@ class CircuitCanvas:
         
         if component_data is None:
             # Dados padrão se não houver informações
-            component_data = {'type': 'unknown', 'value': 0}
+            component_data = {'type': 'unknown', 'value': 0, 'rotation': 0}
         
-        canvas_id: int
-        icon: List[Dict[str, Any]] = self.component_icons[component_data['type']]['icon']
-        for item in icon:
-            points: List[int] = [
-                x + item['points'][0]['x'],
-                y + item['points'][0]['y'],
-                x + item['points'][1]['x'],
-                y + item['points'][1]['y']
-            ]
-            canvas_id = self.canvas.create_line(points, fill="blue", width=self.line_width, tags=f"component_{name}")
+        component_type = component_data.get('type', 'unknown')
+        rotation = component_data.get('rotation', 0)
+        
+        if component_type not in self.component_icons:
+            return
+        
+        # Desenhar o componente com rotação
+        self._draw_rotated_component(name, x, y, component_type, rotation, component_data)
+    
+    def _draw_rotated_component(self, name: str, x: int, y: int, component_type: str, rotation: int, component_data: Dict[str, Any]) -> None:
+        """Desenha um componente rotacionado"""
+        icon_data = self.component_icons[component_type]
+        width = icon_data['width']
+        height = icon_data['height']
+        
+        # Calcular centro do componente
+        center_x = x + width / 2
+        center_y = y + height / 2
+        
+        # Desenhar cada elemento do ícone
+        for item in icon_data['icon']:
+            if item['type'] == 'line':
+                points = item['points']
+                self._draw_rotated_line(name, x, y, points, rotation, width, height)
+            elif item['type'] == 'circle':
+                circle_data = item
+                self._draw_rotated_circle(name, x, y, circle_data, rotation, center_x, center_y)
+            elif item['type'] == 'arrow':
+                points = item['points']
+                self._draw_rotated_arrow(name, x, y, points, rotation, center_x, center_y)
         
         # Texto do nome e valor
-        value_text: str = f"{component_data['value']}"
-        if component_data['type'] == 'resistor':
+        value_text: str = f"{component_data.get('value', 0)}"
+        if component_type == 'resistor':
             value_text += "Ω"
-        elif component_data['type'] == 'voltage_source':
+        elif component_type == 'voltage_source':
             value_text += "V"
-        elif component_data['type'] == 'current_source':
+        elif component_type == 'current_source':
             value_text += "A"
         
-        # Criar texto do componente
+        # Criar texto do componente (não rotacionado)
         text_id: int = self.canvas.create_text(x, y+25, text=f"{name}\n{value_text}", 
                                               font=("Arial", 8), tags=f"component_{name}")
         
         # Armazenar text_id no component_data se possível
         if component_data is not None:
             component_data['text_id'] = text_id
+    
+    def _draw_rotated_line(self, name: str, x: int, y: int, points: List[Dict[str, int]], rotation: int, width: float, height: float) -> None:
+        """Desenha uma linha rotacionada"""
+        if len(points) < 2:
+            return
+        
+        # Aplicar rotação aos pontos
+        rotated_points = []
+        for point in points:
+            # Transladar para origem
+            dx = point['x']
+            dy = point['y']
+            
+            if rotation == 90:
+                new_x = -dy
+                new_y = dx
+                rotated_points.append({
+                    'x': new_x + x + height,
+                    'y': new_y + y
+                })
+
+            elif rotation == 180:
+                new_x = -dx
+                new_y = -dy
+                rotated_points.append({
+                    'x': new_x + x + width,
+                    'y': new_y + y + height
+                })
+            elif rotation == 270:
+                new_x = dy
+                new_y = -dx
+                rotated_points.append({
+                    'x': new_x + x,
+                    'y': new_y + y + width
+                })
+            else:
+                new_x = dx
+                new_y = dy
+                rotated_points.append({
+                    'x': new_x + x,
+                    'y': new_y + y
+                })
+        
+        # Desenhar a linha
+        self.canvas.create_line(
+            rotated_points[0]['x'], rotated_points[0]['y'],
+            rotated_points[1]['x'], rotated_points[1]['y'],
+            fill="blue", width=self.line_width, tags=f"component_{name}"
+        )
+    
+    def _draw_rotated_circle(self, name: str, x: int, y: int, circle_data: Dict[str, Any], rotation: int, center_x: float, center_y: float) -> None:
+        """Desenha um círculo (não precisa de rotação)"""
+        center = circle_data['center']
+        radius = circle_data['radius']
+        
+        # O círculo não muda com rotação, apenas sua posição
+        circle_x = x + center['x']
+        circle_y = y + center['y']
+        
+        self.canvas.create_oval(
+            circle_x - radius, circle_y - radius,
+            circle_x + radius, circle_y + radius,
+            outline="blue", width=self.line_width, tags=f"component_{name}"
+        )
+    
+    def _draw_rotated_arrow(self, name: str, x: int, y: int, points: List[Dict[str, int]], rotation: int, center_x: float, center_y: float) -> None:
+        """Desenha uma seta rotacionada"""
+        if len(points) < 2:
+            return
+        
+        # Aplicar rotação aos pontos da seta
+        rotated_points = []
+        for point in points:
+            # Transladar para origem
+            dx = point['x']
+            dy = point['y']
+            
+            if rotation != 0:
+                # Aplicar rotação
+                angle_rad = math.radians(rotation)
+                new_x = dx * math.cos(angle_rad) - dy * math.sin(angle_rad)
+                new_y = dx * math.sin(angle_rad) + dy * math.cos(angle_rad)
+            else:
+                new_x = dx
+                new_y = dy
+            
+            # Transladar para posição final
+            rotated_points.append({
+                'x': x + new_x,
+                'y': y + new_y
+            })
+        
+        # Desenhar a seta
+        self.canvas.create_line(
+            rotated_points[0]['x'], rotated_points[0]['y'],
+            rotated_points[1]['x'], rotated_points[1]['y'],
+            fill="blue", width=self.line_width, tags=f"component_{name}"
+        )
+        
+        # Adicionar ponta da seta
+        arrow_length = 5
+        dx = rotated_points[1]['x'] - rotated_points[0]['x']
+        dy = rotated_points[1]['y'] - rotated_points[0]['y']
+        length = math.sqrt(dx*dx + dy*dy)
+        
+        if length > 0:
+            # Normalizar
+            dx /= length
+            dy /= length
+            
+            # Calcular pontos da ponta da seta
+            arrow_x1 = rotated_points[1]['x'] - arrow_length * dx + arrow_length * 0.5 * dy
+            arrow_y1 = rotated_points[1]['y'] - arrow_length * dy - arrow_length * 0.5 * dx
+            arrow_x2 = rotated_points[1]['x'] - arrow_length * dx - arrow_length * 0.5 * dy
+            arrow_y2 = rotated_points[1]['y'] - arrow_length * dy + arrow_length * 0.5 * dx
+            
+            # Desenhar ponta da seta
+            self.canvas.create_line(
+                rotated_points[1]['x'], rotated_points[1]['y'],
+                arrow_x1, arrow_y1,
+                fill="blue", width=self.line_width, tags=f"component_{name}"
+            )
+            self.canvas.create_line(
+                rotated_points[1]['x'], rotated_points[1]['y'],
+                arrow_x2, arrow_y2,
+                fill="blue", width=self.line_width, tags=f"component_{name}"
+            )
     
     def draw_ground(self, name: str, x: int, y: int) -> None:
         """Desenha um nó terra no canvas"""
@@ -217,8 +391,8 @@ class CircuitCanvas:
         """Retorna a janela raiz (root) do Tkinter"""
         return self.canvas.winfo_toplevel()
     
-    def create_preview_rectangle(self, component_type: str, x: int, y: int) -> int:
-        """Cria um retângulo de preview para o componente especificado"""
+    def create_preview_rectangle(self, component_type: str, x: int, y: int, rotation: int = 0) -> int:
+        """Cria um retângulo de preview para o componente especificado com rotação"""
         x, y = self.snap_to_grid(x, y)
         
         # Obter dimensões do componente do arquivo de ícones
@@ -230,27 +404,33 @@ class CircuitCanvas:
             width = 40
             height = 40
         
-        # Calcular posição do retângulo 
-        x1 = x
-        y1 = y
-        x2 = x + width
-        y2 = y + height
-
-        x1, y1 = self.snap_to_grid(x1, y1)
+        # Calcular posição do retângulo baseada na rotação
+        if rotation == 0 or rotation == 180:
+            # Rotação 0° ou 180° - dimensões normais
+            x1 = x
+            y1 = y
+            x2 = x + width
+            y2 = y + height
+        else:
+            # Rotação 90° ou 270° - trocar largura e altura
+            x1 = x
+            y1 = y
+            x2 = x + height
+            y2 = y + width
         
-        # Criar retângulo de preview
+        # Criar retângulo normal
         preview_id = self.canvas.create_rectangle(
             x1, y1, x2, y2,
-            outline="blue",
-            width=2,
-            dash=(5, 5),
-            tags="preview_rectangle"
-        )
+                outline="blue",
+                width=2,
+                dash=(5, 5),
+                tags="preview_rectangle"
+            )
         
         return preview_id
     
-    def update_preview_rectangle(self, preview_id: int, component_type: str, x: int, y: int) -> None:
-        """Atualiza a posição do retângulo de preview existente"""
+    def update_preview_rectangle(self, preview_id: int, component_type: str, x: int, y: int, rotation: int = 0) -> None:
+        """Atualiza a posição do retângulo de preview existente com rotação"""
         x, y = self.snap_to_grid(x, y)
         
         # Obter dimensões do componente
@@ -261,13 +441,21 @@ class CircuitCanvas:
             width = 40
             height = 40
         
-        # Calcular nova posição
-        x1 = x
-        y1 = y
-        x2 = x + width
-        y2 = y + height
+        # Calcular nova posição baseada na rotação
+        if rotation == 0 or rotation == 180:
+            # Rotação 0° ou 180° - dimensões normais
+            x1 = x
+            y1 = y
+            x2 = x + width
+            y2 = y + height
+        else:
+            # Rotação 90° ou 270° - trocar largura e altura
+            x1 = x
+            y1 = y
+            x2 = x + height
+            y2 = y + width
         
-        # Atualizar coordenadas do retângulo
+        # Atualizar retângulo normal
         self.canvas.coords(preview_id, x1, y1, x2, y2)
     
     def rename_component(self, old_name: str, new_name: str, component_data: Optional[Dict[str, Any]] = None) -> None:
