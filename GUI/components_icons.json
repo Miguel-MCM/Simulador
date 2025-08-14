@@ -80,59 +80,101 @@
     ]
   },
   "voltage_source": {
-    "width": 40,
+    "width": 90,
     "height": 40,
     "terminals": [
       {"x": 0, "y": 20},
-      {"x": 40, "y": 20}
+      {"x": 90, "y": 20}
     ],
     "icon": [
       {
         "type": "circle",
-        "center": {"x": 20, "y": 20},
-        "radius": 15
+        "center": {"x": 45, "y": 20},
+        "radius": 20
       },
       {
         "type": "line",
         "points": [
-          {"x": 20, "y": 5},
-          {"x": 20, "y": 35}
+          {"x": 0, "y": 20},
+          {"x": 25, "y": 20}
         ]
       },
       {
         "type": "line",
         "points": [
-          {"x": 5, "y": 20},
-          {"x": 35, "y": 20}
+          {"x": 65, "y": 20},
+          {"x": 90, "y": 20}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 30, "y": 20},
+          {"x": 40, "y": 20}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 35, "y": 15},
+          {"x": 35, "y": 25}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 50, "y": 15},
+          {"x": 50, "y": 25}
         ]
       }
     ]
   },
   "current_source": {
-    "width": 40,
+    "width": 90,
     "height": 40,
     "terminals": [
       {"x": 0, "y": 20},
-      {"x": 40, "y": 20}
+      {"x": 90, "y": 20}
     ],
     "icon": [
       {
         "type": "circle",
-        "center": {"x": 20, "y": 20},
-        "radius": 15
+        "center": {"x": 45, "y": 20},
+        "radius": 20
       },
       {
         "type": "line",
         "points": [
-          {"x": 20, "y": 5},
-          {"x": 20, "y": 35}
+          {"x": 0, "y": 20},
+          {"x": 25, "y": 20}
         ]
       },
       {
-        "type": "arrow",
+        "type": "line",
         "points": [
-          {"x": 15, "y": 20},
-          {"x": 25, "y": 20}
+          {"x": 65, "y": 20},
+          {"x": 90, "y": 20}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 30, "y": 20},
+          {"x": 60, "y": 20}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 53, "y": 15},
+          {"x": 60, "y": 20}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 53, "y": 25},
+          {"x": 60, "y": 20}
         ]
       }
     ]

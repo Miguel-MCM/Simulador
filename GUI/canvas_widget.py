@@ -148,10 +148,6 @@ class CircuitCanvas:
         width = icon_data['width']
         height = icon_data['height']
         
-        # Calcular centro do componente
-        center_x = x + width / 2
-        center_y = y + height / 2
-        
         # Desenhar cada elemento do ícone
         for item in icon_data['icon']:
             if item['type'] == 'line':
@@ -159,10 +155,7 @@ class CircuitCanvas:
                 self._draw_rotated_line(name, x, y, points, rotation, width, height)
             elif item['type'] == 'circle':
                 circle_data = item
-                self._draw_rotated_circle(name, x, y, circle_data, rotation, center_x, center_y)
-            elif item['type'] == 'arrow':
-                points = item['points']
-                self._draw_rotated_arrow(name, x, y, points, rotation, center_x, center_y)
+                self._draw_rotated_circle(name, x, y, circle_data, rotation, width, height)
         
         # Texto do nome e valor
         value_text: str = f"{component_data.get('value', 0)}"
@@ -174,14 +167,24 @@ class CircuitCanvas:
             value_text += "A"
         
         # Criar texto do componente (não rotacionado)
-        text_id: int = self.canvas.create_text(x, y+25, text=f"{name}\n{value_text}", 
+        if rotation == 0 or rotation == 180:
+            # Calcular centro do componente
+            center_x = x + width / 2
+            center_y = y + height / 2
+            text_id: int = self.canvas.create_text(center_x, center_y + height/2 + 16, text=f"{name}\n{value_text}", 
                                               font=("Arial", 8), tags=f"component_{name}")
+        else:
+            # Calcular centro do componente
+            center_x = x + height / 2
+            center_y = y + width / 2
+            text_id: int = self.canvas.create_text(center_x + height/2 + 8, center_y, text=f"{name}\n{value_text}", 
+                                              font=("Arial", 8), tags=f"component_{name}", anchor="w")
         
         # Armazenar text_id no component_data se possível
         if component_data is not None:
             component_data['text_id'] = text_id
     
-    def _draw_rotated_line(self, name: str, x: int, y: int, points: List[Dict[str, int]], rotation: int, width: float, height: float) -> None:
+    def _draw_rotated_line(self, name: str, x: int, y: int, points: List[Dict[str, int]], rotation: int, width: int, height: int) -> None:
         """Desenha uma linha rotacionada"""
         if len(points) < 2:
             return
@@ -230,14 +233,28 @@ class CircuitCanvas:
             fill="blue", width=self.line_width, tags=f"component_{name}"
         )
     
-    def _draw_rotated_circle(self, name: str, x: int, y: int, circle_data: Dict[str, Any], rotation: int, center_x: float, center_y: float) -> None:
+    def _draw_rotated_circle(self, name: str, x: int, y: int, circle_data: Dict[str, Any], rotation: int, width: int, height: int) -> None:
         """Desenha um círculo (não precisa de rotação)"""
         center = circle_data['center']
         radius = circle_data['radius']
-        
+
+        # Aplicar rotação ao centro do círculo
+        if rotation == 90:
+            new_x = center['y']
+            new_y = center['x']
+        elif rotation == 180:
+            new_x = width - center['x']
+            new_y = height - center['y']
+        elif rotation == 270:
+            new_x = center['y']
+            new_y = width - center['x']
+        else:
+            new_x = center['x']
+            new_y = center['y']
+
         # O círculo não muda com rotação, apenas sua posição
-        circle_x = x + center['x']
-        circle_y = y + center['y']
+        circle_x = x + new_x
+        circle_y = y + new_y
         
         self.canvas.create_oval(
             circle_x - radius, circle_y - radius,

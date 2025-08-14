@@ -147,12 +147,11 @@ class CanvasHandler:
         self.preview_rectangle.hide()
         self.cursor_mode = "default"
     
-    def handle_voltage_source_placement(self, x: int, y: int, component_manager, node_manager) -> None:
+    def handle_voltage_source_placement(self, x: int, y: int, component_manager: 'ComponentManager', node_manager: 'NodeManager') -> None:
         """Manipula a colocação de uma fonte de tensão"""
         # Obter rotação atual do preview
         rotation = self.preview_rectangle.get_rotation()
         
-        component_name = component_manager.add_voltage_source(x, y, rotation)
         
         # Obter posições dos terminais com rotação aplicada
         terminals = self.canvas_widget.get_component_terminals('voltage_source', rotation)
@@ -161,18 +160,18 @@ class CanvasHandler:
         terminal_1 = { 'x': x + terminals[0]['x'], 'y': y + terminals[0]['y'] }
         terminal_2 = { 'x': x + terminals[1]['x'], 'y': y + terminals[1]['y'] }
         
+        component_name = component_manager.add_voltage_source(x, y, [terminal_1, terminal_2], rotation)
+        
         # Criar wires para conectar os terminais na direção correta
         self._create_wires_for_terminals(terminal_1, terminal_2, rotation, node_manager, component_name)
         
         self.preview_rectangle.hide()
         self.cursor_mode = "default"
     
-    def handle_current_source_placement(self, x: int, y: int, component_manager, node_manager) -> None:
+    def handle_current_source_placement(self, x: int, y: int, component_manager: 'ComponentManager', node_manager: 'NodeManager') -> None:
         """Manipula a colocação de uma fonte de corrente"""
         # Obter rotação atual do preview
         rotation = self.preview_rectangle.get_rotation()
-        
-        component_name = component_manager.add_current_source(x, y, rotation)
         
         # Obter posições dos terminais com rotação aplicada
         terminals = self.canvas_widget.get_component_terminals('current_source', rotation)
@@ -181,6 +180,7 @@ class CanvasHandler:
         terminal_1 = { 'x': x + terminals[0]['x'], 'y': y + terminals[0]['y'] }
         terminal_2 = { 'x': x + terminals[1]['x'], 'y': y + terminals[1]['y'] }
         
+        component_name = component_manager.add_current_source(x, y, [terminal_1, terminal_2], rotation)
         # Criar wires para conectar os terminais na direção correta
         self._create_wires_for_terminals(terminal_1, terminal_2, rotation, node_manager, component_name)
         

@@ -36,45 +36,55 @@ class ComponentManager:
         
         return name
     
-    def add_voltage_source(self, x: int, y: int, rotation: int = 0) -> Optional[str]:
+    def add_voltage_source(self, x: int, y: int, connection_points: List[Dict[str, Any]], rotation: int = 0) -> Optional[str]:
         """Adiciona uma fonte de tensão ao circuito"""
-        name: Optional[str] = simpledialog.askstring("Fonte de Tensão", "Nome da fonte:")
-        if name:
-            value: Optional[float] = simpledialog.askfloat("Fonte de Tensão", "Valor da tensão (V):")
-            if value is not None:
-                self.components[name] = {
-                    'type': 'voltage_source',
-                    'value': value,
-                    'node1': None,
-                    'node2': None,
-                    'x': x,
-                    'y': y,
-                    'rotation': rotation,  # Rotação em graus
-                    'canvas_id': None
-                }
-                self.canvas_widget.draw_component(name, x, y, self.components[name])
-                return name
-        return None
+        # Gerar nome automático para o resistor
+        voltage_source_count = 1
+        while f"S_{voltage_source_count}" in self.components:
+            voltage_source_count += 1
+        
+        name = f"S_{voltage_source_count}"
+        
+        # Adicionar a fonte de tensão ao circuito
+        self.components[name] = {
+            'type': 'voltage_source',
+            'value': 1.0,  # Valor padrão
+            'connections': connection_points,
+            'x': x,
+            'y': y,
+            'rotation': rotation,  # Rotação em graus (0, 90, 180, 270)
+            'canvas_id': None
+        }
+        
+        # Desenhar o componente
+        self.canvas_widget.draw_component(name, x, y, self.components[name])
+        
+        return name
     
-    def add_current_source(self, x: int, y: int, rotation: int = 0) -> Optional[str]:
+    def add_current_source(self, x: int, y: int, connection_points: List[Dict[str, Any]], rotation: int = 0) -> Optional[str]:
         """Adiciona uma fonte de corrente ao circuito"""
-        name: Optional[str] = simpledialog.askstring("Fonte de Corrente", "Nome da fonte:")
-        if name:
-            value: Optional[float] = simpledialog.askfloat("Fonte de Corrente", "Valor da corrente (A):")
-            if value is not None:
-                self.components[name] = {
-                    'type': 'current_source',
-                    'value': value,
-                    'node1': None,
-                    'node2': None,
-                    'x': x,
-                    'y': y,
-                    'rotation': rotation,  # Rotação em graus
-                    'canvas_id': None
-                }
-                self.canvas_widget.draw_component(name, x, y, self.components[name])
-                return name
-        return None
+        # Gerar nome automático para o resistor
+        current_source_count = 1
+        while f"S_{current_source_count}" in self.components:
+            current_source_count += 1
+        
+        name = f"S_{current_source_count}"
+        
+        # Adicionar a fonte de corrente ao circuito
+        self.components[name] = {
+            'type': 'current_source',
+            'value': 1.0,  # Valor padrão
+            'connections': connection_points,
+            'x': x,
+            'y': y,
+            'rotation': rotation,
+            'canvas_id': None
+        }
+        
+        # Desenhar o componente
+        self.canvas_widget.draw_component(name, x, y, self.components[name])
+        
+        return name
     
     def connect_component_to_node(self, component_name: str, node_name: str) -> bool:
         """Conecta um componente a um nó"""
@@ -181,7 +191,6 @@ class ComponentManager:
                 self.canvas_widget.update_component_value(new_name, new_value, self.components[new_name])
                 
                 edit_window.destroy()
-                messagebox.showinfo("Sucesso", "Propriedades atualizadas!")
                 
             except ValueError:
                 messagebox.showerror("Erro", "Valor inválido!")
