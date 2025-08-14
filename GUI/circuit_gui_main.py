@@ -127,29 +127,13 @@ class CircuitGUIMain:
     
     def solve_circuit(self) -> None:
         """Resolve o circuito"""
-        # Por enquanto, apenas mostrar mensagem informativa
-        # A implementação da análise do circuito será feita posteriormente
-        messagebox.showinfo("Análise do Circuito", 
-                           "A funcionalidade de análise do circuito será implementada posteriormente.\n"
-                           "Por enquanto, o sistema suporta a criação e edição de wires e componentes.")
-        
-        # TODO: Implementar análise do circuito com wires
-        # is_valid, message = self.circuit_analyzer.validate_circuit(
-        #     self.node_manager.get_all_nodes(),
-        #     self.component_manager.get_all_components()
-        # )
-        # 
-        # if not is_valid:
-        #     messagebox.showerror("Erro", message)
-        #     return
-        # 
-        # solution = self.circuit_analyzer.solve_circuit(
-        #     self.node_manager.get_all_nodes(),
-        #     self.component_manager.get_all_components()
-        # )
-        # 
-        # if solution:
-        #     self.circuit_analyzer.show_solution(solution, self.root)
+        self.node_manager.name_all_nodes()
+        try:
+            solution = self.circuit_analyzer.solve_circuit(self.node_manager.get_all_nodes(), self.component_manager.get_all_components())
+            for eq in solution[0]:
+                print(eq)
+        except Exception as e:
+            messagebox.showerror("Erro", f"Erro ao resolver circuito: {str(e)}")
     
     def clear_circuit(self) -> None:
         """Limpa o circuito"""

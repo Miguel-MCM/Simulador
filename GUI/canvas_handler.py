@@ -144,11 +144,16 @@ class CanvasHandler:
         terminal_1 = { 'x': x + terminals[0]['x'], 'y': y + terminals[0]['y'] }
         terminal_2 = { 'x': x + terminals[1]['x'], 'y': y + terminals[1]['y'] }
         
-        # Adicionar o resistor com rotação
-        component_name = component_manager.add_resistor(x, y, [terminal_1, terminal_2], rotation)
         
         # Criar wires para conectar os terminais na direção correta
-        self._create_wires_for_terminals(terminal_1, terminal_2, rotation, node_manager, component_name)
+        wire1_name, wire2_name = self._create_wires_for_terminals(terminal_1, terminal_2, rotation, node_manager)
+
+        # Adicionar o resistor com rotação
+        component_name = component_manager.add_resistor(x, y, [{**terminal_1, 'wire': wire1_name}, {**terminal_2, 'wire': wire2_name}], rotation)
+
+        # Conectar os wires ao componente
+        node_manager.connect_wire_to_component(wire1_name, component_name, 0)
+        node_manager.connect_wire_to_component(wire2_name, component_name, 1)
 
         self.preview_rectangle.hide()
         self.cursor_mode = "default"
@@ -166,10 +171,11 @@ class CanvasHandler:
         terminal_1 = { 'x': x + terminals[0]['x'], 'y': y + terminals[0]['y'] }
         terminal_2 = { 'x': x + terminals[1]['x'], 'y': y + terminals[1]['y'] }
         
-        component_name = component_manager.add_voltage_source(x, y, [terminal_1, terminal_2], rotation)
-        
         # Criar wires para conectar os terminais na direção correta
-        self._create_wires_for_terminals(terminal_1, terminal_2, rotation, node_manager, component_name)
+        wire1_name, wire2_name = self._create_wires_for_terminals(terminal_1, terminal_2, rotation, node_manager)
+        component_name = component_manager.add_voltage_source(x, y, [{**terminal_1, 'wire': wire1_name}, {**terminal_2, 'wire': wire2_name}], rotation)
+        node_manager.connect_wire_to_component(wire1_name, component_name, 0)
+        node_manager.connect_wire_to_component(wire2_name, component_name, 1)
         
         self.preview_rectangle.hide()
         self.cursor_mode = "default"
@@ -186,9 +192,11 @@ class CanvasHandler:
         terminal_1 = { 'x': x + terminals[0]['x'], 'y': y + terminals[0]['y'] }
         terminal_2 = { 'x': x + terminals[1]['x'], 'y': y + terminals[1]['y'] }
         
-        component_name = component_manager.add_current_source(x, y, [terminal_1, terminal_2], rotation)
         # Criar wires para conectar os terminais na direção correta
-        self._create_wires_for_terminals(terminal_1, terminal_2, rotation, node_manager, component_name)
+        wire1_name, wire2_name = self._create_wires_for_terminals(terminal_1, terminal_2, rotation, node_manager)
+        component_name = component_manager.add_current_source(x, y, [{**terminal_1, 'wire': wire1_name}, {**terminal_2, 'wire': wire2_name}], rotation)
+        node_manager.connect_wire_to_component(wire1_name, component_name, 0)
+        node_manager.connect_wire_to_component(wire2_name, component_name, 1)
         
         self.preview_rectangle.hide()
         self.cursor_mode = "default"
@@ -196,11 +204,9 @@ class CanvasHandler:
     def handle_ground_placement(self, x: int, y: int, component_manager: 'ComponentManager', node_manager: 'NodeManager') -> None:
         """Manipula a colocação de um ground"""
         # Usar o component_manager para adicionar o ground
-        component_name = component_manager.add_ground(x, y)
         terminals = self.canvas_widget.get_component_terminals('ground', 0)
-
-        # Criar wires para conectar os terminais na direção correta
         wire_name = node_manager.add_wire(x + terminals[0]['x'], y + terminals[0]['y'], x + terminals[0]['x'], y + terminals[0]['y'] - 20)
+        component_name = component_manager.add_ground(x, y, wire_name=wire_name)
         node_manager.connect_wire_to_component(wire_name, component_name, 0)
         
         self.cursor_mode = "default"
@@ -390,7 +396,7 @@ class CanvasHandler:
         """Retorna o retângulo de preview"""
         return self.preview_rectangle
 
-    def _create_wires_for_terminals(self, terminal_1: Dict[str, int], terminal_2: Dict[str, int], rotation: int, node_manager: 'NodeManager', component_name: str) -> None:
+    def _create_wires_for_terminals(self, terminal_1: Dict[str, int], terminal_2: Dict[str, int], rotation: int, node_manager: 'NodeManager') -> None:
         """Cria wires para conectar os terminais na direção correta baseada na rotação"""
         # Determinar direção dos wires baseada na rotação
         if rotation == 0:  # 0° - horizontal
@@ -414,9 +420,7 @@ class CanvasHandler:
             # Wire do terminal 2 para baixo
             wire2_name = node_manager.add_wire(terminal_2['x'], terminal_2['y'], terminal_2['x'], terminal_2['y'] + 10)
         
-        # Conectar os wires ao componente
-        node_manager.connect_wire_to_component(wire1_name, component_name, 0)
-        node_manager.connect_wire_to_component(wire2_name, component_name, 1)
+        return wire1_name, wire2_name
 
     def handle_wire_deletion(self, x: int, y: int, node_manager: 'NodeManager') -> None:
         """Manipula a deleção de um wire"""

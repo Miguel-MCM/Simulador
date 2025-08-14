@@ -712,3 +712,20 @@ class NodeManager:
             for _, wire_data in self.nodes.items():
                 if wire_data['type'] == 'wire' and wire_data['node'] == node_name:
                     wire_data['node'] = None
+
+    def name_all_nodes(self) -> None:
+        """Nomeia todos os nós com os números de 1 em diante"""
+        last_node_name = 0
+        for node_name in [n for n in self.nodes if n.startswith('N_')]:
+            last_node_name = int(node_name.split('_')[1]) if node_name.split('_')[1].isdigit() else 0
+            if last_node_name > last_node_name:
+                last_node_name = last_node_name
+        for wire_name, wire_data in self.nodes.copy().items():
+            if wire_data['type'] == 'wire' and wire_data['connections']:
+                for connection in wire_data['connections']:
+                    if connection['component'] is not None and connection['component'].startswith('GND_'):
+                        self.set_node_name(wire_name, 'GND')
+                        break
+            if wire_data['type'] == 'wire' and wire_data['node'] is None:
+                last_node_name += 1
+                self.set_node_name(wire_name, f'N_{last_node_name}')

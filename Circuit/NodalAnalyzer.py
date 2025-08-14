@@ -1,5 +1,5 @@
-from Circuit import *
-from Equation import Equation
+from .Circuit import *
+from .Equation import Equation
 import numpy as np
 
 class NodalAnalyzer:

@@ -1,7 +1,7 @@
-from Circuit import Circuit, Branch
-from Loop import Loop
+from .Circuit import Circuit, Branch
+from .Loop import Loop
 import numpy as np
-from Equation import Equation
+from .Equation import Equation
 
 class LoopAnalyzer:
     def __init__(self, circuit: Circuit):

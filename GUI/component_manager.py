@@ -86,7 +86,7 @@ class ComponentManager:
         
         return name
     
-    def add_ground(self, x: int, y: int, rotation: int = 0) -> str:
+    def add_ground(self, x: int, y: int, rotation: int = 0, wire_name: str = None) -> str:
         """Adiciona um ground ao circuito"""
         # Gerar nome automático para o ground
         ground_count = 1
@@ -100,7 +100,7 @@ class ComponentManager:
         self.components[name] = {
             'type': 'ground',
             'value': 0.0,  # Ground sempre tem potencial 0V
-            'connections': [{'x': x + terminals[0]['x'], 'y': y + terminals[0]['y']}],  # Terminal único no centro superior
+            'connections': [{'x': x + terminals[0]['x'], 'y': y + terminals[0]['y'], 'wire': wire_name}],  # Terminal único no centro superior
             'x': x,
             'y': y,
             'rotation': rotation,
