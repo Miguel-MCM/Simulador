@@ -16,15 +16,16 @@ class CircuitAnalyzer:
         
         # Criar objetos Node para cada nó visual
         for name, node_data in nodes.items():
-            if node_data['type'] == 'ground':
-                node: Node = Node(circuit, gnd=True, name=name)
-            else:
-                node = Node(circuit, name=name)
+            node = Node(circuit, name=name)
             node_objects[name] = node
         
         # Criar componentes do circuito
         for name, component_data in components.items():
-            if component_data['node1'] and component_data['node2']:
+            if component_data['type'] == 'ground':
+                # Ground é um componente especial que cria um nó terra
+                ground_node: Node = Node(circuit, gnd=True, name=name)
+                node_objects[name] = ground_node
+            elif component_data['node1'] and component_data['node2']:
                 node1: Node = node_objects[component_data['node1']]
                 node2: Node = node_objects[component_data['node2']]
                 
@@ -86,9 +87,9 @@ class CircuitAnalyzer:
                 return False, f"Componente {comp_name} não está conectado a dois nós"
         
         # Verificar se há pelo menos um nó terra
-        has_ground = any(node_data.get('gnd', False) for node_data in nodes.values())
+        has_ground = any(comp_data.get('type') == 'ground' for comp_data in components.values())
         if not has_ground:
-            return False, "Circuito deve ter pelo menos um nó terra (GND)"
+            return False, "Circuito deve ter pelo menos um componente terra (GND)"
         
         return True, "Circuito válido"
 

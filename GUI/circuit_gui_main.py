@@ -207,13 +207,16 @@ class CircuitGUIMain:
             
             # Carregar nós e wires
             for name, node_data in nodes.items():
-                self.node_manager.nodes[name] = node_data
                 if node_data['type'] == 'ground':
-                    self.canvas_widget.draw_ground(name, node_data['x'], node_data['y'])
+                    # Ground agora é um componente, não um nó
+                    self.component_manager.components[name] = node_data
+                    self.canvas_widget.draw_component(name, node_data['x'], node_data['y'], node_data)
                 elif node_data['type'] == 'wire':
+                    self.node_manager.nodes[name] = node_data
                     self.canvas_widget.draw_wire(name, node_data['x1'], node_data['y1'], 
                                                node_data['x2'], node_data['y2'])
                 else:
+                    self.node_manager.nodes[name] = node_data
                     self.canvas_widget.draw_node(name, node_data['x'], node_data['y'])
             
             # Carregar componentes
@@ -244,8 +247,6 @@ class CircuitGUIMain:
         info += "Nós:\n"
         for name, node in actual_nodes.items():
             info += f"  {name}: {node['type']}\n"
-            if node.get('gnd', False):
-                info += f"    Terra (GND)\n"
         
         info += "\nWires:\n"
         for name, wire in wires.items():

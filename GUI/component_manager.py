@@ -86,6 +86,32 @@ class ComponentManager:
         
         return name
     
+    def add_ground(self, x: int, y: int, rotation: int = 0) -> str:
+        """Adiciona um ground ao circuito"""
+        # Gerar nome automático para o ground
+        ground_count = 1
+        while f"GND_{ground_count}" in self.components:
+            ground_count += 1
+        
+        name = f"GND_{ground_count}"
+        terminals = self.canvas_widget.get_component_terminals('ground', 0)
+        
+        # Adicionar o ground ao circuito
+        self.components[name] = {
+            'type': 'ground',
+            'value': 0.0,  # Ground sempre tem potencial 0V
+            'connections': [{'x': x + terminals[0]['x'], 'y': y + terminals[0]['y']}],  # Terminal único no centro superior
+            'x': x,
+            'y': y,
+            'rotation': rotation,
+            'canvas_id': None
+        }
+        
+        # Desenhar o componente
+        self.canvas_widget.draw_component(name, x, y, self.components[name])
+        
+        return name
+    
     def connect_component_to_node(self, component_name: str, node_name: str) -> bool:
         """Conecta um componente a um nó"""
         if component_name in self.components:
@@ -123,7 +149,7 @@ class ComponentManager:
     
     def edit_component_properties(self, component_name: str, parent_window: tk.Tk) -> None:
         """Edita as propriedades de um componente"""
-        if component_name not in self.components:
+        if component_name not in self.components or self.components[component_name]['type'] == 'ground':
             return
         
         component = self.components[component_name]

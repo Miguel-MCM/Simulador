@@ -98,7 +98,7 @@ class CanvasHandler:
                 self.preview_rectangle.current_rotation = 0
             return
         elif self.cursor_mode == "ground":
-            self.handle_ground_placement(x, y, node_manager)
+            self.handle_ground_placement(x, y, component_manager, node_manager)
             return
         elif self.cursor_mode == "update_node":
             node_manager.finish_node_editing()
@@ -187,15 +187,15 @@ class CanvasHandler:
         self.preview_rectangle.hide()
         self.cursor_mode = "default"
     
-    def handle_ground_placement(self, x: int, y: int, node_manager) -> None:
-        """Manipula a colocação de um nó terra"""
-        ground_name = node_manager.add_ground(x, y)
-        
-        # Criar um wire vertical para o terra
-        wire_name = node_manager.add_wire(x, y, x, y + 20)
-        
-        # Conectar o wire ao terra
-        node_manager.connect_wire_to_component(wire_name, ground_name, 0)
+    def handle_ground_placement(self, x: int, y: int, component_manager: 'ComponentManager', node_manager: 'NodeManager') -> None:
+        """Manipula a colocação de um ground"""
+        # Usar o component_manager para adicionar o ground
+        component_name = component_manager.add_ground(x, y)
+        terminals = self.canvas_widget.get_component_terminals('ground', 0)
+
+        # Criar wires para conectar os terminais na direção correta
+        wire_name = node_manager.add_wire(x + terminals[0]['x'], y + terminals[0]['y'], x + terminals[0]['x'], y + terminals[0]['y'] - 20)
+        node_manager.connect_wire_to_component(wire_name, component_name, 0)
         
         self.cursor_mode = "default"
     
@@ -243,17 +243,13 @@ class CanvasHandler:
             tags: Tuple[str, ...] = canvas.gettags(clicked_item[0])
             
             for tag in tags:
-                if tag.startswith("component_"):
-                    component_name: str = tag.split("_", 1)[1]
-                    on_component_click(component_name, x, y)
-                    return
-                elif tag.startswith("node_"):
+                if tag.startswith("node_"):
                     node_name: str = tag.split("_", 1)[1]
                     on_node_click(node_name, x, y)
                     return
-                elif tag.startswith("ground_"):
-                    ground_node_name: str = tag.split("_", 1)[1]
-                    on_node_click(ground_node_name, x, y)
+                elif tag.startswith("component_"):
+                    component_name: str = tag.split("_", 1)[1]
+                    on_component_click(component_name, x, y)
                     return
                 elif tag.startswith("wire_"):
                     wire_name: str = tag.split("_", 1)[1]
@@ -281,12 +277,8 @@ class CanvasHandler:
                     node_name: str = tag.split("_", 1)[1]
                     node_manager.edit_node_properties(node_name, self.canvas_widget.get_root())
                     return
-                elif tag.startswith("ground_"):
-                    ground_node_name: str = tag.split("_", 1)[1]
-                    node_manager.edit_node_properties(ground_node_name, self.canvas_widget.get_root())
-                    return
     
-    def on_canvas_drag(self, event: tk.Event, component_manager) -> None:
+    def on_canvas_drag(self, event: tk.Event, component_manager: 'ComponentManager') -> None:
         """Manipula arrastar no canvas"""
         selected_component = component_manager.get_selected_component()
         if selected_component:
@@ -300,7 +292,7 @@ class CanvasHandler:
         """Manipula soltar no canvas"""
         component_manager.set_selected_component(None)
     
-    def on_canvas_motion(self, event: tk.Event, node_manager) -> None:
+    def on_canvas_motion(self, event: tk.Event, node_manager: 'NodeManager') -> None:
         """Manipula o movimento do mouse no canvas"""
         if self.cursor_mode == "resistor":
             self.preview_rectangle.update("resistor", event.x, event.y)
@@ -308,6 +300,8 @@ class CanvasHandler:
             self.preview_rectangle.update("voltage_source", event.x, event.y)
         elif self.cursor_mode == "current_source":
             self.preview_rectangle.update("current_source", event.x, event.y)
+        elif self.cursor_mode == "ground":
+            self.preview_rectangle.update("ground", event.x, event.y)
         elif node_manager.get_selected_node():
             # Atualizar linhas temporárias durante edição de nó
             node_manager.update_temp_node_lines(event.x, event.y)

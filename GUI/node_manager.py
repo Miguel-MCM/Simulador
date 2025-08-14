@@ -117,7 +117,19 @@ class NodeManager:
         if wire_name in self.nodes and self.nodes[wire_name]['type'] == 'wire':
             connection = {
                 'component': component_name,
-                'terminal': terminal_index
+                'terminal': terminal_index,
+                'node': None
+            }
+            if connection not in self.nodes[wire_name]['connections']:
+                self.nodes[wire_name]['connections'].append(connection)
+    
+    def connect_wire_to_node(self, wire_name: str, node_name: str, terminal_index: int) -> None:
+        """Conecta um wire a um nó"""
+        if wire_name in self.nodes and self.nodes[wire_name]['type'] == 'wire':
+            connection = {
+                'node': node_name,
+                'terminal': terminal_index,
+                'component': None
             }
             if connection not in self.nodes[wire_name]['connections']:
                 self.nodes[wire_name]['connections'].append(connection)
@@ -345,18 +357,6 @@ class NodeManager:
         }
         self.canvas_widget.draw_node(name, x, y)
         return name
-    
-    def add_ground(self, x: int, y: int) -> str:
-        """Adiciona um nó terra ao circuito"""
-        self.nodes["GND"] = {
-            'type': 'ground',
-            'x': x,
-            'y': y,
-            'gnd': True,
-            'lines': []
-        }
-        self.canvas_widget.draw_ground("GND", x, y)
-        return "GND"
     
     def find_node_at_position(self, x: int, y: int, tolerance: int = 10) -> Optional[str]:
         """Encontra um nó ou wire na posição especificada com tolerância"""
@@ -617,8 +617,6 @@ class NodeManager:
     def update_wire_positions_for_component(self, component_name: str, offset_x: int, offset_y: int) -> None:
         """Atualiza as posições dos wires conectados a um componente quando ele é movido"""
         # Encontrar todos os wires que estão conectados a este componente
-        offset_x = offset_x/2
-        offset_y = offset_y/2
         for wire_name, wire_data in self.nodes.items():
             if wire_data['type'] == 'wire':
                 connections = wire_data.get('connections', [])

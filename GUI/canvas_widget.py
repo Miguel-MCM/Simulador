@@ -6,6 +6,7 @@ import json
 
 if TYPE_CHECKING:
     from GUI.circuit_gui import CircuitGui
+    from GUI.component_manager import ComponentManager
 
 class CircuitCanvas:
     def __init__(self, parent: ttk.Frame, circuit_gui:'CircuitGui') -> None:
@@ -157,14 +158,17 @@ class CircuitCanvas:
                 circle_data = item
                 self._draw_rotated_circle(name, x, y, circle_data, rotation, width, height)
         
-        # Texto do nome e valor
-        value_text: str = f"{component_data.get('value', 0)}"
-        if component_type == 'resistor':
-            value_text += "Ω"
-        elif component_type == 'voltage_source':
-            value_text += "V"
-        elif component_type == 'current_source':
-            value_text += "A"
+        # Texto do nome e valor (não mostrar valor para ground)
+        if component_type == 'ground':
+            value_text = ""
+        else:
+            value_text: str = f"{component_data.get('value', 0)}"
+            if component_type == 'resistor':
+                value_text += "Ω"
+            elif component_type == 'voltage_source':
+                value_text += "V"
+            elif component_type == 'current_source':
+                value_text += "A"
         
         # Criar texto do componente (não rotacionado)
         if rotation == 0 or rotation == 180:
@@ -325,20 +329,6 @@ class CircuitCanvas:
                 fill="blue", width=self.line_width, tags=f"component_{name}"
             )
     
-    def draw_ground(self, name: str, x: int, y: int) -> None:
-        """Desenha um nó terra no canvas"""
-        x, y = self.snap_to_grid(x, y)
-        
-        # Símbolo de terra (linhas horizontais)
-        ground_id: int = self.canvas.create_line(x-10, y, x+10, y, fill="black", width=3, tags=f"ground_{name}")
-        self.canvas.create_line(x-7, y+3, x+7, y+3, fill="black", width=2, tags=f"ground_{name}")
-        self.canvas.create_line(x-4, y+6, x+4, y+6, fill="black", width=1, tags=f"ground_{name}")
-        
-        # Texto
-        text_id: int = self.canvas.create_text(x, y+20, text=name, font=("Arial", 10), tags=f"ground_{name}")
-        
-        self.circuit_gui.nodes[name].update({'canvas_id': ground_id, 'text_id': text_id, 'x': x, 'y': y})
-    
     def move_component(self, component_name: str, x: int, y: int) -> None:
         """Move um componente para uma nova posição"""
         x, y = self.snap_to_grid(x, y)
@@ -347,14 +337,14 @@ class CircuitCanvas:
         if not self.circuit_gui or not hasattr(self.circuit_gui, 'component_manager'):
             return
         
-        component_manager = self.circuit_gui.component_manager
-        component_data = component_manager.get_component(component_name)
+        component_manager: 'ComponentManager' = self.circuit_gui.component_manager
+        component_data: Optional[Dict[str, Any]] = component_manager.get_component(component_name)
         
         if not component_data:
             return
         
-        old_x = component_data['x']
-        old_y = component_data['y']
+        old_x: int = component_data['x']
+        old_y: int = component_data['y']
         
         # Calcular offset de movimento
         offset_x = x - old_x
@@ -380,10 +370,8 @@ class CircuitCanvas:
         """Move os wires conectados aos terminais de um componente"""
         if not self.circuit_gui or not hasattr(self.circuit_gui, 'node_manager'):
             return
-        component = self.circuit_gui.component_manager.get_component(component_name)
-        terminals = self.get_component_terminals(component['type'])
-        for terminal in terminals:
-            self.circuit_gui.node_manager.update_wire_positions_for_component(component_name, offset_x, offset_y)
+        # Chamar apenas uma vez para mover todos os wires conectados ao componente
+        self.circuit_gui.node_manager.update_wire_positions_for_component(component_name, offset_x, offset_y)
     
     def redraw_connections(self) -> None:
         """Redesenha todas as conexões do circuito"""
