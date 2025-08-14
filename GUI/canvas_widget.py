@@ -5,11 +5,11 @@ from typing import Dict, Any, Optional, Tuple, List, TYPE_CHECKING
 import json
 
 if TYPE_CHECKING:
-    from GUI.circuit_gui import CircuitGui
+    from GUI.circuit_gui_main import CircuitGUIMain
     from GUI.component_manager import ComponentManager
 
 class CircuitCanvas:
-    def __init__(self, parent: ttk.Frame, circuit_gui:'CircuitGui') -> None:
+    def __init__(self, parent: ttk.Frame, circuit_gui:'CircuitGUIMain') -> None:
         self.parent = parent
         self.circuit_gui = circuit_gui
         
