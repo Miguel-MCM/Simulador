@@ -100,18 +100,18 @@ class CircuitCanvas:
         # Texto do nome
         text_id: int = self.canvas.create_text(x, y+15, text=name, font=("Arial", 10), tags=f"node_{name}")
     
-    def draw_wire(self, name: str, x1: int, y1: int, x2: int, y2: int) -> None:
+    def draw_wire(self, name: str, x1: int, y1: int, x2: int, y2: int, color: str = "black") -> None:
         """Desenha um fio no canvas"""
         x1, y1 = self.snap_to_grid(x1, y1)
         x2, y2 = self.snap_to_grid(x2, y2)
         
         # Linha do fio
-        wire_id: int = self.canvas.create_line(x1, y1, x2, y2, fill="black", width=2, tags=f"wire_{name}")
+        wire_id: int = self.canvas.create_line(x1, y1, x2, y2, fill=color, width=2, tags=f"wire_{name}")
         # pontos de conexão
-        self.canvas.create_oval(x1-2, y1-2, x1+2, y1+2, fill="black", tags=[f"wire_terminal_1_{name}", f"wire_{name}"])
-        self.canvas.create_oval(x2-2, y2-2, x2+2, y2+2, fill="black", tags=[f"wire_terminal_2_{name}", f"wire_{name}"])
+        self.canvas.create_oval(x1-2, y1-2, x1+2, y1+2, fill=color, tags=[f"wire_terminal_1_{name}", f"wire_{name}"])
+        self.canvas.create_oval(x2-2, y2-2, x2+2, y2+2, fill=color, tags=[f"wire_terminal_2_{name}", f"wire_{name}"])
     
-    def redraw_wire(self, name: str, x1: int, y1: int, x2: int, y2: int) -> None:
+    def redraw_wire(self, name: str, x1: int, y1: int, x2: int, y2: int, color: str = "black") -> None:
         """Redesenha um fio existente no canvas"""
         x1, y1 = self.snap_to_grid(x1, y1)
         x2, y2 = self.snap_to_grid(x2, y2)
@@ -120,7 +120,7 @@ class CircuitCanvas:
         self.canvas.delete(f"wire_{name}")
         
         # Desenhar novo wire
-        self.draw_wire(name, x1, y1, x2, y2)
+        self.draw_wire(name, x1, y1, x2, y2, color)
     
     def draw_component(self, name: str, x: int, y: int, component_data: Optional[Dict[str, Any]] = None) -> None:
         """Desenha um componente no canvas com suporte a rotação"""

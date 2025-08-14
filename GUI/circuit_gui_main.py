@@ -56,17 +56,12 @@ class CircuitGUIMain:
     def setup_interface(self) -> None:
         """Configura a interface de usuário"""
         # Adicionar botões de componentes
-        self.ui_components.add_component_button("Criar Wire", self.add_node)
+        self.ui_components.add_component_button("Criar Fio", self.add_node)
+        self.ui_components.add_component_button("Deletar Fio", self.delete_node)
         self.ui_components.add_component_button("Resistor", lambda: self.canvas_handler.set_cursor_mode("resistor"))
         self.ui_components.add_component_button("Fonte de Tensão", lambda: self.canvas_handler.set_cursor_mode("voltage_source"))
         self.ui_components.add_component_button("Fonte de Corrente", lambda: self.canvas_handler.set_cursor_mode("current_source"))
         self.ui_components.add_component_button("Terra (GND)", lambda: self.canvas_handler.set_cursor_mode("ground"))
-        
-        # Adicionar botões de conexões
-        self.ui_components.add_connection_button("Conectar Componentes", self.canvas_handler.toggle_connection_mode)
-        self.ui_components.add_connection_button("Criar Wire Manual", self.start_wire_creation)
-        self.ui_components.add_connection_button("Limpar Seleção", lambda: self.canvas_handler.clear_selection(self.component_manager, self.node_manager))
-        self.ui_components.add_connection_button("Cancelar Edição", self.node_manager.cancel_node_editing)
         
         # Adicionar botões de análise
         self.ui_components.add_analysis_button("Resolver Circuito", self.solve_circuit)
@@ -95,6 +90,11 @@ class CircuitGUIMain:
     def add_node(self) -> None:
         """Adiciona um nó ao circuito (agora cria um wire)"""
         self.canvas_handler.set_cursor_mode("wire_creation")
+        self.update_info()
+
+    def delete_node(self) -> None:
+        """Deleta um nó do circuito"""
+        self.canvas_handler.set_cursor_mode("wire_deletion")
         self.update_info()
     
     def start_wire_creation(self) -> None:

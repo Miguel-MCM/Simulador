@@ -19,10 +19,15 @@ class NodeManager:
         self.editing_wire: Optional[str] = None
         self.wire_connection_start: Optional[Tuple[int, int]] = None
         self.editing_wire_terminal: Optional[int] = 1
+        self.last_hovered_wire: Optional[str] = None
     
     def add_wire(self, x1: int, y1: int, x2: int, y2: int) -> str:
         """Adiciona um fio ao circuito"""
-        wire_name = f"W_{len(self.nodes)}"
+        wire_num = 0
+        for wire_name in self.nodes:
+            if wire_name.startswith('W_'):
+                wire_num = int(wire_name.split('_')[1])
+        wire_name = f"W_{wire_num + 1}"
         self.nodes[wire_name] = {
             'type': 'wire',
             'x1': x1,
@@ -369,13 +374,24 @@ class NodeManager:
     def delete_wire(self, wire_name: str) -> None:
         """Deleta um wire do circuito"""
         if wire_name in self.nodes and self.nodes[wire_name]['type'] == 'wire':
+            if self.nodes[wire_name]['connections']:
+                for connection in self.nodes[wire_name]['connections']:
+                    if connection['component'] is not None:
+                        return
+
             # Remover do canvas
             canvas = self.canvas_widget.get_canvas()
             canvas.delete(f"wire_{wire_name}")
             
+            for connection in self.nodes[wire_name]['connections']:
+                if connection['node'] is not None:
+                    self.nodes[connection['node']]['connections'] = list(filter(lambda x: x['node'] != wire_name, self.nodes[connection['node']]['connections']))
+
             # Remover dos nós
             del self.nodes[wire_name]
             
+            self.last_hovered_wire = None
+
             # Limpar seleção se necessário
             if self.selected_node == wire_name:
                 self.selected_node = None
@@ -734,3 +750,22 @@ class NodeManager:
                         # Redesenhar o wire com as novas coordenadas
                         self.canvas_widget.redraw_wire(wire_name, wire_data['x1'], wire_data['y1'], 
                                                      wire_data['x2'], wire_data['y2'])
+
+    def update_wire_deletion(self, x: int, y: int) -> None:
+        '''Muda a cor do wire para vermelho'''
+        wire_name = self.find_wire_at_position(x, y)
+
+        if self.last_hovered_wire:
+            self.canvas_widget.redraw_wire(self.last_hovered_wire, self.nodes[self.last_hovered_wire]['x1'], self.nodes[self.last_hovered_wire]['y1'], 
+                                                     self.nodes[self.last_hovered_wire]['x2'], self.nodes[self.last_hovered_wire]['y2'], 'black')
+            self.last_hovered_wire = None
+
+        if wire_name:
+            if self.nodes[wire_name]['connections']:
+                for connection in self.nodes[wire_name]['connections']:
+                    if connection['component'] is not None:
+                        return
+
+            self.canvas_widget.redraw_wire(wire_name, self.nodes[wire_name]['x1'], self.nodes[wire_name]['y1'], 
+                                                     self.nodes[wire_name]['x2'], self.nodes[wire_name]['y2'], 'red')
+            self.last_hovered_wire = wire_name

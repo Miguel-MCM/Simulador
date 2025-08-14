@@ -114,6 +114,10 @@ class CanvasHandler:
             # Modo de criação de wire
             self.handle_wire_creation(x, y, node_manager)
             return
+        elif self.cursor_mode == "wire_deletion":
+            # Modo de deleção de wire
+            self.handle_wire_deletion(x, y, node_manager)
+            return
         
         # Esconder o retângulo de preview e resetar o modo do cursor
         self.preview_rectangle.hide()
@@ -312,6 +316,8 @@ class CanvasHandler:
             self.show_wire_preview(event.x, event.y)
         elif self.cursor_mode == "wire_editing":
             node_manager.update_wire_editing(event.x, event.y)
+        elif self.cursor_mode == "wire_deletion":
+            node_manager.update_wire_deletion(event.x, event.y)
         else:
             self.preview_rectangle.hide()
     
@@ -405,3 +411,12 @@ class CanvasHandler:
         node_manager.connect_wire_to_component(wire1_name, component_name, 0)
         node_manager.connect_wire_to_component(wire2_name, component_name, 1)
 
+    def handle_wire_deletion(self, x: int, y: int, node_manager: 'NodeManager') -> None:
+        """Manipula a deleção de um wire"""
+        # Ajustar coordenadas ao grid
+        x, y = self.canvas_widget.snap_to_grid(x, y)
+        
+        # Verificar se clicou em um wire
+        wire_name = node_manager.find_wire_at_position(x, y)
+        if wire_name:
+            node_manager.delete_wire(wire_name)
