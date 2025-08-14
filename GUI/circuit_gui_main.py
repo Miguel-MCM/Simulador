@@ -122,26 +122,8 @@ class CircuitGUIMain:
     def handle_node_click(self, node_name: str, x: int, y: int) -> None:
         """Manipula clique em nó ou wire"""
         node_data = self.node_manager.get_node(node_name)
-        
-        if node_data and node_data['type'] == 'wire':
-            # Para wires, mostrar informações e permitir edição
-            info = f"Wire: {node_name}\n"
-            info += f"Posição: ({node_data['x1']}, {node_data['y1']}) -> ({node_data['x2']}, {node_data['y2']})\n"
-            info += f"Duplo clique para editar propriedades\n"
-            info += f"Clique simples para selecionar"
-            
-            self.node_manager.set_selected_node(node_name)
-        else:
-            # Para nós normais, iniciar edição
-            info = f"Nó: {node_name}\n"
-            info += f"Tipo: {node_data['type']}\n"
-            info += f"Posição: ({node_data['x']}, {node_data['y']})\n"
-            info += f"Duplo clique para editar propriedades"
-            
-            self.node_manager.start_node_editing(node_name)
-        
-        self.component_manager.set_selected_component(None)
-        self.update_info()
+        wire_name = node_data['wire']
+        self.handle_wire_click(f'terminal_1_{wire_name}', x, y)
     
     def solve_circuit(self) -> None:
         """Resolve o circuito"""

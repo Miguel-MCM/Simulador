@@ -98,7 +98,16 @@ class CircuitCanvas:
         node_id: int = self.canvas.create_oval(x-5, y-5, x+5, y+5, fill="black", tags=f"node_{name}")
         
         # Texto do nome
-        text_id: int = self.canvas.create_text(x, y+15, text=name, font=("Arial", 10), tags=f"node_{name}")
+        text_id: int = self.canvas.create_text(x, y+15, text=name.split("_", 1)[1], font=("Arial", 10), tags=f"node_{name}")
+
+    def redraw_node(self, name: str, x: int, y: int) -> None:
+        """Redesenha um nó existente no canvas"""
+        self.canvas.delete(f"node_{name}")
+        self.draw_node(name, x, y)
+    
+    def delete_node(self, name: str) -> None:
+        """Deleta um nó do canvas"""
+        self.canvas.delete(f"node_{name}")
     
     def draw_wire(self, name: str, x1: int, y1: int, x2: int, y2: int, color: str = "black") -> None:
         """Desenha um fio no canvas"""

@@ -34,6 +34,7 @@ class NodeManager:
             'y1': y1,
             'x2': x2,
             'y2': y2,
+            'node': None,
             'connections': []  # Lista de componentes conectados
         }
         self.canvas_widget.draw_wire(wire_name, x1, y1, x2, y2)
@@ -128,7 +129,8 @@ class NodeManager:
 
             
             # Encontrar terminais de wires na mesma posição
-            for wire_name, other_wire_data in self.nodes.items():
+            nodes_copy = self.nodes.copy()
+            for wire_name, other_wire_data in nodes_copy.items():
                 if other_wire_data['type'] == 'wire' and wire_name != self.editing_wire:
                     if other_wire_data['x1'] == x and other_wire_data['y1'] == y:
                         self.connect_wire_to_node(wire_name, self.editing_wire, 1, self.editing_wire_terminal)
@@ -209,6 +211,9 @@ class NodeManager:
             }
             if connection not in self.nodes[wire_name]['connections']:
                 self.nodes[wire_name]['connections'].append(connection)
+
+        if self.nodes[node_name]['type'] == 'wire':
+            self.set_node_name(node_name, self.nodes[wire_name]['node'])
     
     def get_wire_connections(self, wire_name: str) -> List[Dict[str, Any]]:
         """Retorna as conexões de um wire"""
@@ -270,106 +275,47 @@ class NodeManager:
         
         # Criar janela de edição
         edit_window = tk.Toplevel(parent_window)
-        edit_window.title(f"Editar Wire {wire_name}")
+        edit_window.title(f"Editar Nó {wire_name}")
         edit_window.geometry("400x300")
         edit_window.transient(parent_window)
         edit_window.grab_set()
         
-        # Frame principal
-        main_frame = ttk.Frame(edit_window, padding=20)
-        main_frame.pack(fill=tk.BOTH, expand=True)
+        # Criar widgets
+        # Editar nome do nó
+        name_label = ttk.Label(edit_window, text="Nome do nó:")
+        name_label.pack(pady=5)
+        name_entry = ttk.Entry(edit_window)
+        name_entry.pack(pady=5)
+        name_entry.insert(0, wire_name)
         
-        # Coordenadas do wire
-        ttk.Label(main_frame, text="Coordenadas:", font=("Arial", 12, "bold")).grid(row=0, column=0, columnspan=2, sticky=tk.W, pady=(0, 10))
-        
-        ttk.Label(main_frame, text="Início (x1, y1):").grid(row=1, column=0, sticky=tk.W, pady=5)
-        start_frame = ttk.Frame(main_frame)
-        start_frame.grid(row=1, column=1, sticky=tk.W, pady=5, padx=(10, 0))
-        
-        x1_entry = ttk.Entry(start_frame, width=8)
-        x1_entry.insert(0, str(wire['x1']))
-        x1_entry.pack(side=tk.LEFT, padx=(0, 5))
-        
-        y1_entry = ttk.Entry(start_frame, width=8)
-        y1_entry.insert(0, str(wire['y1']))
-        y1_entry.pack(side=tk.LEFT)
-        
-        ttk.Label(main_frame, text="Fim (x2, y2):").grid(row=2, column=0, sticky=tk.W, pady=5)
-        end_frame = ttk.Frame(main_frame)
-        end_frame.grid(row=2, column=1, sticky=tk.W, pady=5, padx=(10, 0))
-        
-        x2_entry = ttk.Entry(end_frame, width=8)
-        x2_entry.insert(0, str(wire['x2']))
-        x2_entry.pack(side=tk.LEFT, padx=(0, 5))
-        
-        y2_entry = ttk.Entry(end_frame, width=8)
-        y2_entry.insert(0, str(wire['y2']))
-        y2_entry.pack(side=tk.LEFT)
-        
-        # Conexões
-        ttk.Label(main_frame, text="Conexões:", font=("Arial", 12, "bold")).grid(row=3, column=0, columnspan=2, sticky=tk.W, pady=(20, 10))
-        
-        connections_text = tk.Text(main_frame, height=6, width=40)
-        connections_text.grid(row=4, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=5)
-        
-        # Preencher conexões existentes
-        connections_info = ""
-        for conn in wire.get('connections', []):
-            connections_info += f"Componente: {conn['component']}, Terminal: {conn['terminal']}\n"
-        
-        if connections_info:
-            connections_text.insert(tk.END, connections_info)
-        else:
-            connections_text.insert(tk.END, "Nenhuma conexão")
-        
-        connections_text.config(state=tk.DISABLED)
-        
-        # Botões
-        button_frame = ttk.Frame(main_frame)
-        button_frame.grid(row=5, column=0, columnspan=2, pady=20)
-        
+        button_frame = ttk.Frame(edit_window)
+        button_frame.pack(pady=5)
+
         def save_changes():
+            name = name_entry.get()
             try:
-                # Atualizar coordenadas
-                new_x1 = int(x1_entry.get())
-                new_y1 = int(y1_entry.get())
-                new_x2 = int(x2_entry.get())
-                new_y2 = int(y2_entry.get())
-                
-                # Validar coordenadas
-                if new_x1 < 0 or new_y1 < 0 or new_x2 < 0 or new_y2 < 0:
-                    messagebox.showerror("Erro", "Coordenadas devem ser positivas!")
-                    return
-                
-                # Atualizar wire
-                wire['x1'] = new_x1
-                wire['y1'] = new_y1
-                wire['x2'] = new_x2
-                wire['y2'] = new_y2
-                
-                # Redesenhar wire
-                self.canvas_widget.redraw_wire(wire_name, new_x1, new_y1, new_x2, new_y2)
-                
+                self.set_node_name(wire_name, name)
                 edit_window.destroy()
-                messagebox.showinfo("Sucesso", "Propriedades do wire atualizadas!")
+                self.add_node(name, wire_name, self.nodes[wire_name]['x1'], self.nodes[wire_name]['y1'])
                 
-            except ValueError:
-                messagebox.showerror("Erro", "Coordenadas devem ser números inteiros!")
             except Exception as e:
                 messagebox.showerror("Erro", f"Erro ao atualizar: {str(e)}")
-        
-        def delete_wire():
-            if messagebox.askyesno("Confirmar", f"Deseja deletar o wire {wire_name}?"):
-                self.delete_wire(wire_name)
-                edit_window.destroy()
-                messagebox.showinfo("Sucesso", f"Wire {wire_name} deletado!")
         
         def cancel_changes():
             edit_window.destroy()
         
         ttk.Button(button_frame, text="Salvar", command=save_changes).pack(side=tk.LEFT, padx=5)
-        ttk.Button(button_frame, text="Deletar", command=delete_wire).pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text="Cancelar", command=cancel_changes).pack(side=tk.LEFT, padx=5)
+
+    def set_node_name(self, wire_name: str, name: str):
+        if self.nodes[wire_name]['node'] == name:
+            return
+        if self.nodes[wire_name]['node'] != name and self.nodes[wire_name]['node'] is not None:
+            self.delete_node(self.nodes[wire_name]['node'])
+        self.nodes[wire_name]['node'] = name
+        for connection in self.nodes[wire_name]['connections']:
+            if connection['node'] is not None:
+                self.set_node_name(connection['node'], name)
     
     def delete_wire(self, wire_name: str) -> None:
         """Deleta um wire do circuito"""
@@ -412,38 +358,20 @@ class NodeManager:
     
     
 
-    def add_node(self, x: int, y: int) -> Optional[str]:
+    def add_node(self, name: str, wire_name: str, x: int, y: int) -> Optional[str]:
         """Adiciona um nó ao circuito"""
-        name: Optional[str] = simpledialog.askstring("Nó", "Nome do nó:")
         if name:
-            self.nodes[name] = {
+            self.nodes[f'N_{name}'] = {
                 'type': 'node',
                 'x': x,
                 'y': y,
                 'gnd': False,
-                'lines': []
+                'lines': [],
+                'wire': wire_name
             }
-            self.canvas_widget.draw_node(name, x, y)
+            self.canvas_widget.draw_node(f'N_{name}', x, y)
             return name
         return None
-    
-    def add_node_auto(self, x: int, y: int) -> str:
-        """Adiciona um nó automaticamente com nome gerado"""
-        node_count = 1
-        while f"N_{node_count}" in self.nodes:
-            node_count += 1
-        
-        name = f"N_{node_count}"
-        
-        self.nodes[name] = {
-            'type': 'node',
-            'x': x,
-            'y': y,
-            'gnd': False,
-            'lines': []
-        }
-        self.canvas_widget.draw_node(name, x, y)
-        return name
     
     def find_node_at_position(self, x: int, y: int, tolerance: int = 10) -> Optional[str]:
         """Encontra um nó ou wire na posição especificada com tolerância"""
@@ -750,6 +678,11 @@ class NodeManager:
                         # Redesenhar o wire com as novas coordenadas
                         self.canvas_widget.redraw_wire(wire_name, wire_data['x1'], wire_data['y1'], 
                                                      wire_data['x2'], wire_data['y2'])
+            elif terminal_index == 1 and wire_data['type'] == 'node':
+                if wire_data['wire'] == node_name:
+                    wire_data['x'] = x
+                    wire_data['y'] = y
+                    self.canvas_widget.redraw_node(wire_name, wire_data['x'], wire_data['y'])
 
     def update_wire_deletion(self, x: int, y: int) -> None:
         '''Muda a cor do wire para vermelho'''
@@ -769,3 +702,13 @@ class NodeManager:
             self.canvas_widget.redraw_wire(wire_name, self.nodes[wire_name]['x1'], self.nodes[wire_name]['y1'], 
                                                      self.nodes[wire_name]['x2'], self.nodes[wire_name]['y2'], 'red')
             self.last_hovered_wire = wire_name
+
+    def delete_node(self, node_name: str) -> None:
+        """Deleta um nó do circuito"""
+        node_name = f'N_{node_name}'
+        if node_name in self.nodes:
+            self.nodes.pop(node_name)
+            self.canvas_widget.delete_node(node_name)
+            for _, wire_data in self.nodes.items():
+                if wire_data['type'] == 'wire' and wire_data['node'] == node_name:
+                    wire_data['node'] = None

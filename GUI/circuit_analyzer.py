@@ -14,30 +14,22 @@ class CircuitAnalyzer:
         circuit: CircuitClass = CircuitClass()
         node_objects: Dict[str, Node] = {}
         
-        # Criar objetos Node para cada nó visual
-        for name, node_data in nodes.items():
-            node = Node(circuit, name=name)
-            node_objects[name] = node
         
-        # Criar componentes do circuito
-        for name, component_data in components.items():
-            if component_data['type'] == 'ground':
-                # Ground é um componente especial que cria um nó terra
-                ground_node: Node = Node(circuit, gnd=True, name=name)
-                node_objects[name] = ground_node
-            elif component_data['node1'] and component_data['node2']:
-                node1: Node = node_objects[component_data['node1']]
-                node2: Node = node_objects[component_data['node2']]
-                
-                if component_data['type'] == 'resistor':
-                    resistor: Resistor = Resistor(component_data['value'], node1, node2, name=name)
-                elif component_data['type'] == 'voltage_source':
-                    voltage_source: IndependentTensionSource = IndependentTensionSource(component_data['value'], node1, node2, name=name)
-                elif component_data['type'] == 'current_source':
-                    current_source: IndependentCurrentSource = IndependentCurrentSource(component_data['value'], node1, node2, name=name)
         
         return circuit
     
+    def get_nodes_from_wires(self, wires: Dict[str, Dict[str, Any]]) -> Dict[str, Node]:
+        """Retorna os nós do circuito a partir dos fios"""
+        nodes: Dict[str, Node] = {}
+        for wire_name, wire_data in wires.items():
+            if wire_data['type'] == 'wire':
+                nodes[wire_name] = None
+                for connection in wire_data['connections']:
+                    if connection['node'] is not None:
+                        nodes[wire_name] = connection['node']
+                        break
+        return nodes
+
     def solve_circuit(self, nodes: Dict[str, Dict[str, Any]], components: Dict[str, Dict[str, Any]]) -> Optional[Dict[Any, float]]:
         """Resolve o circuito e retorna a solução"""
         try:

@@ -249,11 +249,7 @@ class CanvasHandler:
             tags: Tuple[str, ...] = canvas.gettags(clicked_item[0])
             
             for tag in tags:
-                if tag.startswith("node_"):
-                    node_name: str = tag.split("_", 1)[1]
-                    on_node_click(node_name, x, y)
-                    return
-                elif tag.startswith("component_"):
+                if tag.startswith("component_"):
                     component_name: str = tag.split("_", 1)[1]
                     on_component_click(component_name, x, y)
                     return
@@ -261,9 +257,13 @@ class CanvasHandler:
                     wire_name: str = tag.split("_", 1)[1]
                     on_wire_click(wire_name, x, y)
                     return
+                elif tag.startswith("node_"):
+                    node_name: str = tag.split("_", 1)[1]
+                    on_node_click(node_name, x, y)
+                    return
     
     def on_canvas_double_click(self, event: tk.Event, 
-                               component_manager, node_manager) -> None:
+                               component_manager: 'ComponentManager', node_manager: 'NodeManager') -> None:
         """Manipula duplo clique no canvas para editar propriedades"""
         x: int = event.x
         y: int = event.y
@@ -275,13 +275,20 @@ class CanvasHandler:
             tags: Tuple[str, ...] = canvas.gettags(clicked_item[0])
             
             for tag in tags:
+                print(tag)
                 if tag.startswith("component_"):
                     component_name: str = tag.split("_", 1)[1]
                     component_manager.edit_component_properties(component_name, self.canvas_widget.get_root())
                     return
-                elif tag.startswith("node_"):
-                    node_name: str = tag.split("_", 1)[1]
-                    node_manager.edit_node_properties(node_name, self.canvas_widget.get_root())
+                elif tag.startswith("wire_terminal_"):
+                    self.selected_wire = None
+                    wire_name: str = tag.split("_", 3)[3]
+                    node_manager.edit_wire_properties(wire_name, self.canvas_widget.get_root())
+                    return
+                elif tag.startswith("wire_"):
+                    self.selected_wire = None
+                    wire_name: str = tag.split("_", 1)[1]
+                    node_manager.edit_wire_properties(wire_name, self.canvas_widget.get_root())
                     return
     
     def on_canvas_drag(self, event: tk.Event, component_manager: 'ComponentManager') -> None:
