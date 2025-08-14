@@ -32,62 +32,118 @@ class NodeManager:
             'connections': []  # Lista de componentes conectados
         }
         self.canvas_widget.draw_wire(wire_name, x1, y1, x2, y2)
+
+        # Encontrar terminais de wires na mesma posição
+        for other_wire_name, other_wire_data in self.nodes.items():
+            if other_wire_data['type'] == 'wire' and other_wire_name != wire_name:
+                if other_wire_data['x1'] == x1 and other_wire_data['y1'] == y1:
+                    self.connect_wire_to_node(other_wire_name, wire_name, 1, 1)
+                    self.connect_wire_to_node(wire_name, other_wire_name, 1, 1)
+                elif other_wire_data['x2'] == x1 and other_wire_data['y2'] == y1:
+                    self.connect_wire_to_node(wire_name, other_wire_name, 1, 2)
+                    self.connect_wire_to_node(other_wire_name, wire_name, 2, 1)
+                if other_wire_data['x1'] == x2 and other_wire_data['y1'] == y2:
+                    self.connect_wire_to_node(wire_name, other_wire_name, 2, 1)
+                    self.connect_wire_to_node(other_wire_name, wire_name, 1, 2)
+                if other_wire_data['x2'] == x2 and other_wire_data['y2'] == y2:
+                    self.connect_wire_to_node(wire_name, other_wire_name, 2, 2)
+                    self.connect_wire_to_node(other_wire_name, wire_name, 2, 2)
+        
         return wire_name
 
     def start_wire_editing(self, wire_name: str, terminal_num: int, x: int, y: int) -> None:
         """Inicia o modo de edição de wire"""
-        terminal_num = 1 if terminal_num == 2 else 2
-        if wire_name in self.nodes and self.nodes[wire_name]['type'] == 'wire':
-            if ( 0 if terminal_num == 2 else 1) in [connection['terminal'] for connection in self.nodes[wire_name]['connections']]:
-                return
-
-            self.wire_editing_mode = True
-            self.editing_wire = wire_name
-            self.selected_node = wire_name
-            self.editing_wire_terminal = terminal_num
-            self.wire_connection_start = (self.nodes[self.editing_wire][f'x{terminal_num}'], self.nodes[self.editing_wire][f'y{terminal_num}'])
-            self.nodes[self.editing_wire][f'x{self.editing_wire_terminal}'] = self.wire_connection_start[0]
-            self.nodes[self.editing_wire][f'y{self.editing_wire_terminal}'] = self.wire_connection_start[1]
+        # Verificar se já está em modo de edição
+        if self.wire_editing_mode:
+            return
             
-            # Definir modo de cursor para wire_editing
-            if hasattr(self.canvas_widget, 'circuit_gui') and self.canvas_widget.circuit_gui:
-                if hasattr(self.canvas_widget.circuit_gui, 'canvas_handler'):
-                    self.canvas_widget.circuit_gui.canvas_handler.cursor_mode = "wire_editing"
+        # Determinar qual terminal está sendo editado (1 ou 2)
+        editing_terminal = terminal_num
+        
+        # Verificar se o wire existe e é válido
+        if wire_name not in self.nodes or self.nodes[wire_name]['type'] != 'wire':
+            return
+            
+        # Verificar se o terminal é válido (1 ou 2)
+        if editing_terminal not in [1, 2]:
+            return
+            
+        # Verificar se o terminal já está conectado
+        if (editing_terminal - 1) in [connection['terminal'] for connection in self.nodes[wire_name]['connections'] if connection['node'] is None]:
+            return
+
+        # Verificar se o wire tem as coordenadas necessárias
+        wire_data = self.nodes[wire_name]
+        if f'x{editing_terminal}' not in wire_data or f'y{editing_terminal}' not in wire_data:
+            return
+
+        self.wire_editing_mode = True
+        self.editing_wire = wire_name
+        self.selected_node = wire_name
+        self.editing_wire_terminal = editing_terminal
+        
+        # Salvar a posição original do terminal que está sendo editado
+        self.wire_connection_start = (wire_data[f'x{editing_terminal}'], wire_data[f'y{editing_terminal}'])
+        
+        # Definir modo de cursor para wire_editing
+        if hasattr(self.canvas_widget, 'circuit_gui') and self.canvas_widget.circuit_gui:
+            if hasattr(self.canvas_widget.circuit_gui, 'canvas_handler'):
+                self.canvas_widget.circuit_gui.canvas_handler.cursor_mode = "wire_editing"
 
     def update_wire_editing(self, x: int, y: int) -> None:
         """Atualiza a posição do wire"""
-        if self.wire_editing_mode and self.editing_wire:
-            terminal_num = 1 if self.editing_wire_terminal == 2 else 2
-            self.nodes[self.editing_wire][f'x{terminal_num}'] = x
-            self.nodes[self.editing_wire][f'y{terminal_num}'] = y
-            self.canvas_widget.redraw_wire(self.editing_wire, self.nodes[self.editing_wire]['x1'], self.nodes[self.editing_wire]['y1'], x, y)
+        if self.wire_editing_mode and self.editing_wire and self.editing_wire_terminal is not None:
+            # Atualizar a posição do terminal que está sendo editado
+            self.nodes[self.editing_wire][f'x{self.editing_wire_terminal}'] = x
+            self.nodes[self.editing_wire][f'y{self.editing_wire_terminal}'] = y
+            
+            # Obter as coordenadas do outro terminal (que não está sendo editado)
+            other_terminal = 1 if self.editing_wire_terminal == 2 else 2
+            other_x = self.nodes[self.editing_wire][f'x{other_terminal}']
+            other_y = self.nodes[self.editing_wire][f'y{other_terminal}']
+
+            self.update_wire_positions_for_node(self.editing_wire, self.editing_wire_terminal, x, y)
+            # Redesenhar o wire do terminal fixo até a posição atual do mouse
+            self.canvas_widget.redraw_wire(self.editing_wire, other_x, other_y, x, y)
+
             
     
     def finish_wire_editing(self, x: int, y: int) -> None:
         """Finaliza a edição do wire"""
-        if not self.wire_editing_mode or not self.editing_wire:
+        if not self.wire_editing_mode or not self.editing_wire or self.editing_wire_terminal is None:
             return
         
-        wire_data = self.nodes[self.editing_wire]
+        editing_wire_data = self.nodes[self.editing_wire]
         
         if self.wire_connection_start:
             # Atualizar posição final do wire
             other_terminal = 1 if self.editing_wire_terminal == 2 else 2
-            wire_data[f'x{self.editing_wire_terminal}'] = self.wire_connection_start[0]
-            wire_data[f'y{self.editing_wire_terminal}'] = self.wire_connection_start[1]
-            wire_data[f'x{other_terminal}'] = x
-            wire_data[f'y{other_terminal}'] = y
+            editing_wire_data[f'x{self.editing_wire_terminal}'] = x
+            editing_wire_data[f'y{self.editing_wire_terminal}'] = y
+
             
-            # Redesenhar o wire
-            self.canvas_widget.redraw_wire(self.editing_wire, wire_data['x1'], wire_data['y1'], x, y)
+            # Encontrar terminais de wires na mesma posição
+            for wire_name, other_wire_data in self.nodes.items():
+                if other_wire_data['type'] == 'wire' and wire_name != self.editing_wire:
+                    if other_wire_data['x1'] == x and other_wire_data['y1'] == y:
+                        self.connect_wire_to_node(wire_name, self.editing_wire, 1, self.editing_wire_terminal)
+                        self.connect_wire_to_node(self.editing_wire, wire_name, self.editing_wire_terminal, 1)
+                    elif other_wire_data['x2'] == x and other_wire_data['y2'] == y:
+                        self.connect_wire_to_node(wire_name, self.editing_wire, 2, self.editing_wire_terminal)
+                        self.connect_wire_to_node(self.editing_wire, wire_name, self.editing_wire_terminal, 2)
+
+            self.update_wire_positions_for_node(self.editing_wire, self.editing_wire_terminal, x, y)
+
+            # Redesenhar o wire com as coordenadas finais corretas
+            self.canvas_widget.redraw_wire(self.editing_wire, editing_wire_data['x1'], editing_wire_data['y1'], editing_wire_data['x2'], editing_wire_data['y2'])
+            
             
             # Sair do modo de edição
             self.exit_wire_editing_mode()
         else:
             # Definir posição inicial
             self.wire_connection_start = (x, y)
-            wire_data[f'x{self.editing_wire_terminal}'] = x
-            wire_data[f'y{self.editing_wire_terminal}'] = y
+
     
     def exit_wire_editing_mode(self) -> None:
         """Sai do modo de edição de wire"""
@@ -95,6 +151,7 @@ class NodeManager:
         self.editing_wire = None
         self.selected_node = None
         self.wire_connection_start = None
+        self.editing_wire_terminal = None
         
         # Resetar modo do cursor
         if hasattr(self.canvas_widget, 'circuit_gui') and self.canvas_widget.circuit_gui:
@@ -103,7 +160,20 @@ class NodeManager:
     
     def cancel_wire_editing(self) -> None:
         """Cancela a edição de wire"""
-        if self.wire_editing_mode:
+        if self.wire_editing_mode and self.editing_wire and self.editing_wire_terminal is not None:
+            # Restaurar as coordenadas originais do wire antes de sair
+            if self.wire_connection_start:
+                editing_wire_data = self.nodes[self.editing_wire]
+                editing_wire_data[f'x{self.editing_wire_terminal}'] = self.wire_connection_start[0]
+                editing_wire_data[f'y{self.editing_wire_terminal}'] = self.wire_connection_start[1]
+                
+                # Redesenhar o wire com as coordenadas originais
+                other_terminal = 1 if self.editing_wire_terminal == 2 else 2
+                other_x = editing_wire_data[f'x{other_terminal}']
+                other_y = editing_wire_data[f'y{other_terminal}']
+                self.canvas_widget.redraw_wire(self.editing_wire, other_x, other_y, 
+                                             self.wire_connection_start[0], self.wire_connection_start[1])
+            
             self.exit_wire_editing_mode()
     
     def redraw_wire(self, wire_name: str) -> None:
@@ -123,12 +193,13 @@ class NodeManager:
             if connection not in self.nodes[wire_name]['connections']:
                 self.nodes[wire_name]['connections'].append(connection)
     
-    def connect_wire_to_node(self, wire_name: str, node_name: str, terminal_index: int) -> None:
+    def connect_wire_to_node(self, wire_name: str, node_name: str, my_terminal_index: int, their_terminal_index: int) -> None:
         """Conecta um wire a um nó"""
         if wire_name in self.nodes and self.nodes[wire_name]['type'] == 'wire':
             connection = {
                 'node': node_name,
-                'terminal': terminal_index,
+                'my_terminal': my_terminal_index,
+                'their_terminal': their_terminal_index,
                 'component': None
             }
             if connection not in self.nodes[wire_name]['connections']:
@@ -401,6 +472,7 @@ class NodeManager:
         self.wire_editing_mode = False
         self.editing_wire = None
         self.wire_connection_start = None
+        self.editing_wire_terminal = None
     
     def set_selected_node(self, node_name: Optional[str]) -> None:
         """Define o nó selecionado"""
@@ -635,6 +707,29 @@ class NodeManager:
                             # Terminal 2 (x2, y2)
                             wire_data['x2'] += offset_x
                             wire_data['y2'] += offset_y
+                        
+                        # Redesenhar o wire com as novas coordenadas
+                        self.canvas_widget.redraw_wire(wire_name, wire_data['x1'], wire_data['y1'], 
+                                                     wire_data['x2'], wire_data['y2'])
+
+    def update_wire_positions_for_node(self, node_name: str, terminal_index: int, x: int, y: int) -> None:
+        """Atualiza as posições dos wires conectados a um nó quando ele é movido"""
+        # Encontrar todos os wires que estão conectados a este nó
+        for wire_name, wire_data in self.nodes.items():
+            if wire_data['type'] == 'wire':
+                connections = wire_data.get('connections', [])
+                
+                for connection in connections:
+                    if connection['node'] == node_name and connection['their_terminal'] == terminal_index:
+                        # Determinar qual terminal do wire mover baseado no índice
+                        if connection['my_terminal'] == 1:
+                            # Terminal 1 (x1, y1)
+                            wire_data['x1'] = x
+                            wire_data['y1'] = y
+                        elif connection['my_terminal'] == 2:
+                            # Terminal 2 (x2, y2)
+                            wire_data['x2'] = x
+                            wire_data['y2'] = y
                         
                         # Redesenhar o wire com as novas coordenadas
                         self.canvas_widget.redraw_wire(wire_name, wire_data['x1'], wire_data['y1'], 

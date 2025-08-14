@@ -254,7 +254,7 @@ class CircuitGUIMain:
             connections = wire.get('connections', [])
             if connections:
                 info += f"    Conectado a: "
-                for conn in connections:
+                for conn in [ c for c in connections if c['node'] is None]:
                     info += f"{conn['component']}({conn['terminal']}) "
                 info += "\n"
             else:

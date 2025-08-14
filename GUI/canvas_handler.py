@@ -77,6 +77,8 @@ class CanvasHandler:
         """Manipula cliques no canvas"""
         x: int = event.x
         y: int = event.y
+
+        x, y = self.canvas_widget.snap_to_grid(x, y)
         
         # Verificar modo do cursor
         if self.cursor_mode == "resistor":
@@ -199,7 +201,7 @@ class CanvasHandler:
         
         self.cursor_mode = "default"
     
-    def handle_wire_creation(self, x: int, y: int, node_manager) -> None:
+    def handle_wire_creation(self, x: int, y: int, node_manager: 'NodeManager') -> None:
         """Manipula a criação de um wire"""
         # Ajustar coordenadas ao grid
         x, y = self.canvas_widget.snap_to_grid(x, y)
