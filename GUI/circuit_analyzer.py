@@ -23,11 +23,11 @@ class CircuitAnalyzer:
             elif component_data['type'] == 'voltage_source':
                 node1 = node_objects[nodes[component_data['connections'][0]['wire']]['node']]
                 node2 = node_objects[nodes[component_data['connections'][1]['wire']]['node']]
-                voltage_source: IndependentTensionSource = IndependentTensionSource(component_data['value'], node1, node2, name=component_name)
+                voltage_source: IndependentTensionSource = IndependentTensionSource(component_data['value'], node2, node1, name=component_name)
             elif component_data['type'] == 'current_source':
                 node1 = node_objects[nodes[component_data['connections'][0]['wire']]['node']]
                 node2 = node_objects[nodes[component_data['connections'][1]['wire']]['node']]
-                current_source: IndependentCurrentSource = IndependentCurrentSource(component_data['value'], node1, node2, name=component_name)
+                current_source: IndependentCurrentSource = IndependentCurrentSource(component_data['value'], node2, node1, name=component_name)
         return circuit
     
     def get_nodes_from_wires(self, wires: Dict[str, Dict[str, Any]]) -> Set[str]:
