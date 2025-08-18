@@ -64,7 +64,8 @@ class CircuitGUIMain:
         self.ui_components.add_component_button("Terra (GND)", lambda: self.canvas_handler.set_cursor_mode("ground"))
         
         # Adicionar botões de análise
-        self.ui_components.add_analysis_button("Resolver Circuito", self.solve_circuit)
+        self.ui_components.add_analysis_button("Análise Nodal", self.nodal_analysis)
+        self.ui_components.add_analysis_button("Análise de Malhas", self.loop_analysis)
         self.ui_components.add_analysis_button("Limpar Circuito", self.clear_circuit)
         self.ui_components.add_analysis_button("Salvar Circuito", self.save_circuit)
         self.ui_components.add_analysis_button("Carregar Circuito", self.load_circuit)
@@ -125,13 +126,27 @@ class CircuitGUIMain:
         wire_name = node_data['wire']
         self.handle_wire_click(f'terminal_1_{wire_name}', x, y)
     
-    def solve_circuit(self) -> None:
+    def nodal_analysis(self) -> None:
         """Resolve o circuito"""
         self.node_manager.name_all_nodes()
         try:
-            solution = self.circuit_analyzer.solve_circuit(self.node_manager.get_all_nodes(), self.component_manager.get_all_components())
-            for eq in solution[0]:
-                print(eq)
+            solution = self.circuit_analyzer.nodal_analysis(self.node_manager.get_all_nodes(), self.component_manager.get_all_components())
+            if solution:
+                self.circuit_analyzer.show_solution(solution, self.root)
+            else:
+                messagebox.showerror("Erro", "Não foi possível resolver o circuito")
+        except Exception as e:
+            messagebox.showerror("Erro", f"Erro ao resolver circuito: {str(e)}")
+    
+    def loop_analysis(self) -> None:
+        """Resolve o circuito"""
+        self.node_manager.name_all_nodes()
+        try:
+            solution = self.circuit_analyzer.loop_analysis(self.node_manager.get_all_nodes(), self.component_manager.get_all_components())
+            if solution:
+                self.circuit_analyzer.show_solution(solution, self.root)
+            else:
+                messagebox.showerror("Erro", "Não foi possível resolver o circuito")
         except Exception as e:
             messagebox.showerror("Erro", f"Erro ao resolver circuito: {str(e)}")
     
