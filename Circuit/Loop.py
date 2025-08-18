@@ -14,3 +14,10 @@ class Loop:
     
     def get_tension_eqs(self):
         pass
+
+    def set_name(self, name:str):
+        self.name = name
+
+    def reverse(self):
+        self.nodes = [self.nodes[0], *self.nodes[:0:-1]]
+        self.branches = self.branches[::-1]

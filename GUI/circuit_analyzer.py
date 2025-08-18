@@ -66,13 +66,209 @@ class CircuitAnalyzer:
             # Compilar circuito
             circuit: CircuitClass = self.compile_circuit(nodes, components)
 
-            # Obter equações do sistema
+            # Obter loops do circuito
             loop_analyzer: LoopAnalyzer = LoopAnalyzer(circuit)
+            loops = loop_analyzer.find_loops()
+            
+            if not loops:
+                messagebox.showwarning("Aviso", "Nenhum loop foi encontrado no circuito")
+                return None
+            
+            # Mostrar loops e permitir edição de nomes
+            if not self._show_loops_editor(loops):
+                return None  # Usuário cancelou
+            
+            # Obter equações do sistema com os nomes atualizados
             return loop_analyzer.get_resistance_matrix()
             
         except Exception as e:
             print(e)
             return None
+
+    def _show_loops_editor(self, loops: list) -> bool:
+        """Mostra os loops encontrados e permite editar seus nomes"""
+        # Criar janela para edição dos loops
+        loops_window = tk.Toplevel()
+        loops_window.title("Loops Encontrados")
+        loops_window.geometry("800x600")
+        loops_window.resizable(True, True)
+        
+        # Frame principal
+        main_frame = ttk.Frame(loops_window)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        
+        # Título
+        title_label = ttk.Label(main_frame, text="Loops Encontrados no Circuito", 
+                               font=("Arial", 16, "bold"))
+        title_label.pack(pady=(0, 20))
+        
+        # Instruções
+        instructions = ttk.Label(main_frame, 
+                               text="Os seguintes loops foram encontrados. Você pode editar seus nomes e inverter seus sentidos antes de prosseguir com a análise.",
+                               font=("Arial", 10), wraplength=700)
+        instructions.pack(pady=(0, 10))
+        
+        # Instruções de uso
+        usage_instructions = ttk.Label(main_frame, 
+                                     text="• Duplo clique no NOME para editar\n• Duplo clique no SENTIDO para inverter (Horário ↔ Anti-horário)",
+                                     font=("Arial", 9), foreground="blue", justify=tk.LEFT)
+        usage_instructions.pack(pady=(0, 20))
+        
+        # Frame para lista de loops
+        loops_frame = ttk.Frame(main_frame)
+        loops_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 20))
+        
+        # Criar Treeview para mostrar os loops
+        columns = ("Nome", "Sentido", "Componentes")
+        tree = ttk.Treeview(loops_frame, columns=columns, show="headings", height=10)
+        
+        # Configurar colunas
+        tree.heading("Nome", text="Nome do Loop")
+        tree.heading("Sentido", text="Sentido do Loop")
+        tree.heading("Componentes", text="Componentes do Loop")
+        
+        tree.column("Nome", width=150, minwidth=100)
+        tree.column("Sentido", width=100, minwidth=80)
+        tree.column("Componentes", width=500, minwidth=200)
+        
+        # Adicionar scrollbar
+        scrollbar = ttk.Scrollbar(loops_frame, orient=tk.VERTICAL, command=tree.yview)
+        tree.configure(yscrollcommand=scrollbar.set)
+        
+        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Dicionário para armazenar as entradas de edição
+        entry_widgets = {}
+        
+        # Função para editar nome do loop
+        def edit_loop_name(event):
+            item = tree.selection()[0]
+            column = tree.identify_column(event.x)
+            
+            if column == "#1":  # Coluna do nome
+                # Criar janela de edição
+                edit_window = tk.Toplevel(loops_window)
+                edit_window.title("Editar Nome do Loop")
+                edit_window.geometry("400x150")
+                edit_window.transient(loops_window)
+                edit_window.grab_set()
+                
+                # Frame para edição
+                edit_frame = ttk.Frame(edit_window, padding=20)
+                edit_frame.pack(fill=tk.BOTH, expand=True)
+                
+                # Label e entrada
+                ttk.Label(edit_frame, text="Novo nome para o loop:").pack(pady=(0, 10))
+                entry = ttk.Entry(edit_window, width=40)
+                entry.pack(pady=(0, 20))
+                entry.insert(0, tree.item(item, "values")[0])
+                entry.focus()
+                entry.select_range(0, tk.END)
+                
+                # Botões
+                button_frame = ttk.Frame(edit_frame)
+                button_frame.pack()
+                
+                def save_name():
+                    new_name = entry.get().strip()
+                    if new_name:
+                        # Atualizar o nome do loop
+                        loop_index = int(item)
+                        loops[loop_index].set_name(new_name)
+                        
+                        # Atualizar a visualização
+                        values = list(tree.item(item, "values"))
+                        values[0] = new_name
+                        tree.item(item, values=values)
+                        
+                        edit_window.destroy()
+                
+                def cancel_edit():
+                    edit_window.destroy()
+                
+                ttk.Button(button_frame, text="Salvar", command=save_name).pack(side=tk.LEFT, padx=(0, 10))
+                ttk.Button(button_frame, text="Cancelar", command=cancel_edit).pack(side=tk.LEFT)
+                
+                # Bind Enter para salvar
+                entry.bind('<Return>', lambda e: save_name())
+                entry.bind('<Escape>', lambda e: cancel_edit())
+        
+        # Função para inverter o sentido do loop
+        def reverse_loop_direction():
+            item = tree.selection()[0]
+            loop_index = int(item)
+            loop = loops[loop_index]
+            
+            # Inverter o sentido do loop
+            loop.reverse()
+            
+            # Atualizar a visualização
+            values = list(tree.item(item, "values"))
+            
+            # Formatar componentes do loop invertido
+            components_str = " → ".join([branch.name for branch in loop.branches])
+            
+            # Alternar o sentido mostrado
+            new_direction = "Inverter"
+            
+            # Atualizar valores na árvore
+            tree.item(item, values=(values[0], new_direction, components_str))
+            
+        
+        # Bind duplo clique para editar nome ou inverter sentido
+        def handle_double_click(event):
+            item = tree.selection()[0]
+            column = tree.identify_column(event.x)
+            
+            if column == "#1":  # Coluna do nome
+                edit_loop_name(event)
+            elif column == "#2":  # Coluna do sentido
+                reverse_loop_direction()
+        
+        tree.bind('<Double-1>', handle_double_click)
+        
+        # Preencher a árvore com os loops
+        for i, loop in enumerate(loops):
+            # Formatar nós do loop
+            nodes_str = " → ".join([node.name for node in loop.nodes])
+            if loop.nodes:
+                nodes_str += f" → {loop.nodes[0].name}"  # Voltar ao início
+            
+            # Formatar componentes do loop
+            components_str = " → ".join([branch.name for branch in loop.branches])
+            
+            tree.insert("", "end", iid=str(i), values=(loop.name, "Inverter", components_str))
+        
+        # Frame para botões
+        button_frame = ttk.Frame(main_frame)
+        button_frame.pack(side=tk.BOTTOM, pady=(20, 0))
+        
+        # Variável para controlar se o usuário confirmou
+        confirmed = [False]
+        
+        def confirm_loops():
+            confirmed[0] = True
+            loops_window.destroy()
+        
+        def cancel_loops():
+            loops_window.destroy()
+        
+        # Botões
+        ttk.Button(button_frame, text="Confirmar e Continuar", 
+                  command=confirm_loops).pack(side=tk.LEFT, padx=(0, 10))
+        ttk.Button(button_frame, text="Cancelar", command=cancel_loops).pack(side=tk.LEFT)
+        
+        # Centralizar a janela
+        loops_window.update_idletasks()
+        x = (loops_window.winfo_screenwidth() // 2) - (loops_window.winfo_width() // 2)
+        y = (loops_window.winfo_screenheight() // 2) - (loops_window.winfo_height() // 2)
+        loops_window.geometry(f"+{x}+{y}")
+        
+        # Aguardar o usuário
+        loops_window.wait_window()
+        
+        return confirmed[0]
 
     def show_solution(self, solution: Tuple[list, list], parent_window: tk.Tk) -> None:
         """Mostra a solução do circuito com as equações do sistema em LaTeX e a solução numérica"""
