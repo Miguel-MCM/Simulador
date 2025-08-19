@@ -372,7 +372,7 @@ class CircuitAnalyzer:
             aux_ax.set_ylim(0, 1)
             
             # Renderizar equações auxiliares
-            y_position = 0.95
+            y_position = 0.85
             for i, eq in enumerate(aux_equations):
                 if eq:  # Verificar se a equação não está vazia
                     latex_text = eq.to_latex()
