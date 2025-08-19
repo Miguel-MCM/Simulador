@@ -86,6 +86,32 @@ class ComponentManager:
         
         return name
     
+    def add_current_dependent_current_source(self, x: int, y: int, connection_points: List[Dict[str, Any]], rotation: int = 0) -> Optional[str]:
+        """Adiciona uma fonte de corrente dependente ao circuito"""
+        # Gerar nome automático para o resistor
+        current_dependent_current_source_count = 1
+        while f"S_{current_dependent_current_source_count}" in self.components:
+            current_dependent_current_source_count += 1
+        
+        name = f"S_{current_dependent_current_source_count}"
+        
+        # Adicionar a fonte de corrente dependente ao circuito
+        self.components[name] = {
+            'type': 'current_dependent_current_source',
+            'value': 0,  # Valor padrão
+            'connections': connection_points,
+            'x': x,
+            'y': y,
+            'rotation': rotation,
+            'canvas_id': None,
+            'component_current': None,
+        }
+        
+        # Desenhar o componente
+        self.canvas_widget.draw_component(name, x, y, self.components[name])
+        
+        return name
+    
     def add_ground(self, x: int, y: int, rotation: int = 0, wire_name: str = None) -> str:
         """Adiciona um ground ao circuito"""
         # Gerar nome automático para o ground
@@ -105,6 +131,84 @@ class ComponentManager:
             'y': y,
             'rotation': rotation,
             'canvas_id': None
+        }
+        
+        # Desenhar o componente
+        self.canvas_widget.draw_component(name, x, y, self.components[name])
+        
+        return name
+    
+    def add_current_dependent_tension_source(self, x: int, y: int, connection_points: List[Dict[str, Any]], rotation: int = 0) -> Optional[str]:
+        """Adiciona uma fonte de tensão dependente ao circuito"""
+        # Gerar nome automático para a fonte
+        current_dependent_tension_source_count = 1
+        while f"S_{current_dependent_tension_source_count}" in self.components:
+            current_dependent_tension_source_count += 1
+        
+        name = f"S_{current_dependent_tension_source_count}"
+        
+        # Adicionar a fonte de tensão dependente ao circuito
+        self.components[name] = {
+            'type': 'current_dependent_tension_source',
+            'value': 0,  # Valor padrão
+            'connections': connection_points,
+            'x': x,
+            'y': y,
+            'rotation': rotation,
+            'canvas_id': None,
+            'component_current': None,
+        }
+        
+        # Desenhar o componente
+        self.canvas_widget.draw_component(name, x, y, self.components[name])
+        
+        return name
+    
+    def add_tension_dependent_current_source(self, x: int, y: int, connection_points: List[Dict[str, Any]], rotation: int = 0) -> Optional[str]:
+        """Adiciona uma fonte de corrente dependente de tensão ao circuito"""
+        # Gerar nome automático para a fonte
+        tension_dependent_current_source_count = 1
+        while f"S_{tension_dependent_current_source_count}" in self.components:
+            tension_dependent_current_source_count += 1
+        
+        name = f"S_{tension_dependent_current_source_count}"
+        
+        # Adicionar a fonte de corrente dependente de tensão ao circuito
+        self.components[name] = {
+            'type': 'tension_dependent_current_source',
+            'value': 0,  # Valor padrão
+            'connections': connection_points,
+            'x': x,
+            'y': y,
+            'rotation': rotation,
+            'canvas_id': None,
+            'tension_nodes': None,  # Tupla de nomes de nós (nó1, nó2) ou None
+        }
+        
+        # Desenhar o componente
+        self.canvas_widget.draw_component(name, x, y, self.components[name])
+        
+        return name
+    
+    def add_tension_dependent_tension_source(self, x: int, y: int, connection_points: List[Dict[str, Any]], rotation: int = 0) -> Optional[str]:
+        """Adiciona uma fonte de tensão dependente de tensão ao circuito"""
+        # Gerar nome automático para a fonte
+        tension_dependent_tension_source_count = 1
+        while f"S_{tension_dependent_tension_source_count}" in self.components:
+            tension_dependent_tension_source_count += 1
+        
+        name = f"S_{tension_dependent_tension_source_count}"
+        
+        # Adicionar a fonte de tensão dependente de tensão ao circuito
+        self.components[name] = {
+            'type': 'tension_dependent_tension_source',
+            'value': 0,  # Valor padrão
+            'connections': connection_points,
+            'x': x,
+            'y': y,
+            'rotation': rotation,
+            'canvas_id': None,
+            'tension_nodes': None,  # Tupla de nomes de nós (nó1, nó2) ou None
         }
         
         # Desenhar o componente
@@ -157,7 +261,14 @@ class ComponentManager:
         # Criar janela de edição
         edit_window = tk.Toplevel(parent_window)
         edit_window.title(f"Editar {component_name}")
-        edit_window.geometry("300x200")
+        
+        # Ajustar tamanho da janela baseado no tipo de componente
+        if component['type'] in ['current_dependent_current_source', 'current_dependent_tension_source', 
+                                'tension_dependent_current_source', 'tension_dependent_tension_source']:
+            edit_window.geometry("400x350")
+        else:
+            edit_window.geometry("300x200")
+            
         edit_window.transient(parent_window)
         edit_window.grab_set()
         
@@ -181,9 +292,89 @@ class ComponentManager:
         unit = "Ω" if component['type'] == 'resistor' else "V" if component['type'] == 'voltage_source' else "A"
         ttk.Label(main_frame, text=f"({unit})").grid(row=1, column=2, sticky=tk.W, pady=5, padx=(5, 0))
         
+        # Campo para seleção do componente dependente (apenas para fontes dependentes de corrente)
+        if component['type'] in ['current_dependent_current_source', 'current_dependent_tension_source']:
+            ttk.Label(main_frame, text="Componente dependente:").grid(row=2, column=0, sticky=tk.W, pady=5)
+            
+            # Lista de componentes disponíveis (excluindo o próprio e grounds)
+            available_components = []
+            for comp_name, comp_data in self.components.items():
+                if (comp_name != component_name and 
+                    comp_data['type'] not in ['ground', 'current_dependent_current_source', 'current_dependent_tension_source',
+                                            'tension_dependent_current_source', 'tension_dependent_tension_source']):
+                    available_components.append(comp_name)
+            
+            # Combobox para seleção do componente
+            component_var = tk.StringVar()
+            if component.get('component_current') in available_components:
+                component_var.set(component['component_current'])
+            elif available_components:
+                component_var.set(available_components[0])
+            
+            component_combo = ttk.Combobox(main_frame, textvariable=component_var, values=available_components, state="readonly", width=20)
+            component_combo.grid(row=2, column=1, sticky=tk.W, pady=5, padx=(10, 0))
+            
+            # Mensagem de ajuda
+            help_text = "Selecione o componente cuja corrente a fonte depende"
+            ttk.Label(main_frame, text=help_text, font=("Arial", 8), foreground="gray").grid(
+                row=3, column=0, columnspan=3, sticky=tk.W, pady=(0, 10)
+            )
+        
+        # Campo para seleção de nós (apenas para fontes dependentes de tensão)
+        if component['type'] in ['tension_dependent_current_source', 'tension_dependent_tension_source']:
+            # Nomear todos os nós antes de editar
+            if hasattr(self.canvas_widget, 'circuit_gui') and self.canvas_widget.circuit_gui:
+                if hasattr(self.canvas_widget.circuit_gui, 'node_manager'):
+                    self.canvas_widget.circuit_gui.node_manager.name_all_nodes()
+            
+            ttk.Label(main_frame, text="Nó 1:").grid(row=2, column=0, sticky=tk.W, pady=5)
+            ttk.Label(main_frame, text="Nó 2:").grid(row=3, column=0, sticky=tk.W, pady=5)
+            
+            # Obter lista de nós disponíveis
+            available_nodes = []
+            if hasattr(self.canvas_widget, 'circuit_gui') and self.canvas_widget.circuit_gui:
+                if hasattr(self.canvas_widget.circuit_gui, 'node_manager'):
+                    nodes = self.canvas_widget.circuit_gui.node_manager.get_all_nodes()
+                    for node_name, node_data in nodes.items():
+                        if node_data['type'] == 'node':  # Apenas nós, não wires
+                            available_nodes.append(node_name.split('_', 1)[1])
+            
+            # Comboboxes para seleção dos nós
+            node1_var = tk.StringVar()
+            node2_var = tk.StringVar()
+            
+            # Definir valores iniciais
+            if component.get('tension_nodes') and len(component['tension_nodes']) == 2:
+                node1_var.set(component['tension_nodes'][0])
+                node2_var.set(component['tension_nodes'][1])
+            elif available_nodes:
+                if len(available_nodes) >= 2:
+                    node1_var.set(available_nodes[0])
+                    node2_var.set(available_nodes[1])
+                elif len(available_nodes) == 1:
+                    node1_var.set(available_nodes[0])
+                    node2_var.set(available_nodes[0])
+            
+            node1_combo = ttk.Combobox(main_frame, textvariable=node1_var, values=available_nodes, state="readonly", width=20)
+            node1_combo.grid(row=2, column=1, sticky=tk.W, pady=5, padx=(10, 0))
+            
+            node2_combo = ttk.Combobox(main_frame, textvariable=node2_var, values=available_nodes, state="readonly", width=20)
+            node2_combo.grid(row=3, column=1, sticky=tk.W, pady=5, padx=(10, 0))
+            
+            # Mensagem de ajuda
+            help_text = "Selecione os nós entre os quais a tensão será medida"
+            ttk.Label(main_frame, text=help_text, font=("Arial", 8), foreground="gray").grid(
+                row=4, column=0, columnspan=3, sticky=tk.W, pady=(0, 10)
+            )
+        
         # Botões
         button_frame = ttk.Frame(main_frame)
-        button_frame.grid(row=2, column=0, columnspan=3, pady=20)
+        if component['type'] in ['current_dependent_current_source', 'current_dependent_tension_source']:
+            button_frame.grid(row=4, column=0, columnspan=3, pady=20)
+        elif component['type'] in ['tension_dependent_current_source', 'tension_dependent_tension_source']:
+            button_frame.grid(row=5, column=0, columnspan=3, pady=20)
+        else:
+            button_frame.grid(row=2, column=0, columnspan=3, pady=20)
         
         def save_changes():
             try:
@@ -197,7 +388,7 @@ class ComponentManager:
                 if new_name == "":  # Allow empty name for new components
                     new_name = component_name
                 
-                if new_value <= 0:
+                if component['type'] == 'resistor' and new_value <= 0:
                     messagebox.showerror("Erro", "Valor deve ser maior que zero!")
                     return
                 
@@ -212,6 +403,19 @@ class ComponentManager:
                 
                 # Atualizar valor
                 self.components[new_name]['value'] = new_value
+                
+                # Atualizar componente dependente se for fonte dependente de corrente
+                if component['type'] in ['current_dependent_current_source', 'current_dependent_tension_source']:
+                    selected_component = component_var.get()
+                    if selected_component:
+                        self.components[new_name]['component_current'] = selected_component
+                
+                # Atualizar nós dependentes se for fonte dependente de tensão
+                if component['type'] in ['tension_dependent_current_source', 'tension_dependent_tension_source']:
+                    selected_node1 = node1_var.get()
+                    selected_node2 = node2_var.get()
+                    if selected_node1 and selected_node2:
+                        self.components[new_name]['tension_nodes'] = (selected_node1, selected_node2)
                 
                 # Atualizar canvas
                 self.canvas_widget.update_component_value(new_name, new_value, self.components[new_name])

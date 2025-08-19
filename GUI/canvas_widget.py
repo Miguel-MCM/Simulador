@@ -178,6 +178,14 @@ class CircuitCanvas:
                 value_text += "V"
             elif component_type == 'current_source':
                 value_text += "A"
+            elif component_type == 'current_dependent_current_source':
+                value_text += "A"
+            elif component_type == 'current_dependent_tension_source':
+                value_text += "V"
+            elif component_type == 'tension_dependent_current_source':
+                value_text += "A"
+            elif component_type == 'tension_dependent_tension_source':
+                value_text += "V"
         
         # Criar texto do componente (não rotacionado)
         if rotation == 0 or rotation == 180:
@@ -491,6 +499,14 @@ class CircuitCanvas:
                 value_text += "V"
             elif component_data['type'] == 'current_source':
                 value_text += "A"
+            elif component_data['type'] == 'current_dependent_current_source':
+                value_text += "A"
+            elif component_data['type'] == 'current_dependent_tension_source':
+                value_text += "V"
+            elif component_data['type'] == 'tension_dependent_current_source':
+                value_text += "A"
+            elif component_data['type'] == 'tension_dependent_tension_source':
+                value_text += "V"
             
             # Atualizar o texto com o novo nome
             if 'text_id' in component_data:
@@ -524,6 +540,14 @@ class CircuitCanvas:
                 value_text += "V"
             elif component_data['type'] == 'current_source':
                 value_text += "A"
+            elif component_data['type'] == 'current_dependent_current_source':
+                value_text += "A"
+            elif component_data['type'] == 'current_dependent_tension_source':
+                value_text += "V"
+            elif component_data['type'] == 'tension_dependent_current_source':
+                value_text += "A"
+            elif component_data['type'] == 'tension_dependent_tension_source':
+                value_text += "V"
             
             # Atualizar o texto com o novo valor
             if 'text_id' in component_data:

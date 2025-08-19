@@ -62,6 +62,10 @@ class CircuitGUIMain:
         self.ui_components.add_component_button("Fonte de Tensão", lambda: self.canvas_handler.set_cursor_mode("voltage_source"))
         self.ui_components.add_component_button("Fonte de Corrente", lambda: self.canvas_handler.set_cursor_mode("current_source"))
         self.ui_components.add_component_button("Terra (GND)", lambda: self.canvas_handler.set_cursor_mode("ground"))
+        self.ui_components.add_component_button("Fonte de Corrente Dependente de Corrente", lambda: self.canvas_handler.set_cursor_mode("current_dependent_current_source"))
+        self.ui_components.add_component_button("Fonte de Tensão Dependente de Corrente", lambda: self.canvas_handler.set_cursor_mode("current_dependent_tension_source"))
+        self.ui_components.add_component_button("Fonte de Corrente Dependente de Tensão", lambda: self.canvas_handler.set_cursor_mode("tension_dependent_current_source"))
+        self.ui_components.add_component_button("Fonte de Tensão Dependente de Tensão", lambda: self.canvas_handler.set_cursor_mode("tension_dependent_tension_source"))
         
         # Adicionar botões de análise
         self.ui_components.add_analysis_button("Análise Nodal", self.nodal_analysis)
@@ -210,8 +214,6 @@ class CircuitGUIMain:
             
             # Atualizar informações
             self.update_info()
-            
-            messagebox.showinfo("Sucesso", "Circuito carregado com sucesso!")
     
     def update_info(self) -> None:
         """Atualiza as informações na área de texto"""

@@ -1,8 +1,8 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from typing import Dict, Any, Optional, Set, Tuple
-from Circuit import Circuit as CircuitClass, Node, Resistor, IndependentCurrentSource, IndependentTensionSource, NodalAnalyzer, LoopAnalyzer    
-import matplotlib
+from Circuit import Circuit as CircuitClass, Node, Resistor, IndependentCurrentSource, IndependentTensionSource, NodalAnalyzer, LoopAnalyzer, TensionDependentCurrentSource, TensionDependentTensionSource, CurrentDependentCurrentSource, CurrentDependentTensionSource, Branch, Equation    
+import matplotlib   
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
@@ -20,21 +20,47 @@ class CircuitAnalyzer:
         """Compila o circuito visual em objetos do circuito"""
         circuit: CircuitClass = CircuitClass()
         node_objects: Dict[str, Node] = {}
+        component_objects: Dict[str, Branch] = {}
         for node_name in self.get_nodes_from_wires(nodes):
             node_objects[node_name] = Node(circuit, gnd=node_name == 'GND', name=node_name)
-        for component_name, component_data in components.items():
+        for component_name, component_data in sorted(components.items(), key=lambda x: x[0] in ['current_dependent_current_source', 'current_dependent_tension_source']):
             if component_data['type'] == 'resistor':
                 node1 = node_objects[nodes[component_data['connections'][0]['wire']]['node']]
                 node2 = node_objects[nodes[component_data['connections'][1]['wire']]['node']]
-                resistor: Resistor = Resistor(component_data['value'], node1, node2, name=component_name)
+                component: Resistor = Resistor(component_data['value'], node1, node2, name=component_name)
             elif component_data['type'] == 'voltage_source':
                 node1 = node_objects[nodes[component_data['connections'][0]['wire']]['node']]
                 node2 = node_objects[nodes[component_data['connections'][1]['wire']]['node']]
-                voltage_source: IndependentTensionSource = IndependentTensionSource(component_data['value'], node2, node1, name=component_name)
+                component: IndependentTensionSource = IndependentTensionSource(component_data['value'], node2, node1, name=component_name)
             elif component_data['type'] == 'current_source':
                 node1 = node_objects[nodes[component_data['connections'][0]['wire']]['node']]
                 node2 = node_objects[nodes[component_data['connections'][1]['wire']]['node']]
-                current_source: IndependentCurrentSource = IndependentCurrentSource(component_data['value'], node2, node1, name=component_name)
+                component: IndependentCurrentSource = IndependentCurrentSource(component_data['value'], node2, node1, name=component_name)
+            elif component_data['type'] == 'tension_dependent_current_source':
+                node1 = node_objects[nodes[component_data['connections'][0]['wire']]['node']]
+                node2 = node_objects[nodes[component_data['connections'][1]['wire']]['node']]
+                v_plus = node_objects[nodes[component_data['tension_nodes'][0]]]
+                v_minus = node_objects[nodes[component_data['tension_nodes'][1]]]
+                component: TensionDependentCurrentSource = TensionDependentCurrentSource(component_data['value'], node2, node1, v_plus, v_minus, name=component_name)
+            elif component_data['type'] == 'tension_dependent_tension_source':
+                node1 = node_objects[nodes[component_data['connections'][0]['wire']]['node']]
+                node2 = node_objects[nodes[component_data['connections'][1]['wire']]['node']]
+                v_plus = node_objects[nodes[component_data['tension_nodes'][0]]]
+                v_minus = node_objects[nodes[component_data['tension_nodes'][1]]]
+                component: TensionDependentTensionSource = TensionDependentTensionSource(component_data['value'], node2, node1, v_plus, v_minus, name=component_name)
+            elif component_data['type'] == 'current_dependent_current_source':
+                node1 = node_objects[nodes[component_data['connections'][0]['wire']]['node']]
+                node2 = node_objects[nodes[component_data['connections'][1]['wire']]['node']]
+                component_current = component_objects[component_data['component_current']]
+                current_out_of = component_current.nodes[0]
+                component: CurrentDependentCurrentSource = CurrentDependentCurrentSource(component_data['value'], node2, node1, component_current, current_out_of, name=component_name)
+            elif component_data['type'] == 'current_dependent_tension_source':
+                node1 = node_objects[nodes[component_data['connections'][0]['wire']]['node']]
+                node2 = node_objects[nodes[component_data['connections'][1]['wire']]['node']]
+                component_current = component_objects[component_data['component_current']]
+                current_out_of = component_current.nodes[0]
+                component: CurrentDependentTensionSource = CurrentDependentTensionSource(component_data['value'], node2, node1, component_current, current_out_of, name=component_name)
+            component_objects[component_name] = component
         return circuit
     
     def get_nodes_from_wires(self, wires: Dict[str, Dict[str, Any]]) -> Set[str]:
@@ -73,7 +99,9 @@ class CircuitAnalyzer:
             if not loops:
                 messagebox.showwarning("Aviso", "Nenhum loop foi encontrado no circuito")
                 return None
-            
+
+            for i, loop in enumerate(loops):
+                loop.set_name(f"L{i+1}")
             # Mostrar loops e permitir edição de nomes
             if not self._show_loops_editor(loops):
                 return None  # Usuário cancelou
@@ -391,7 +419,7 @@ class CircuitAnalyzer:
                         if hasattr(var, 'name'):
                             var_name = var.name
                         else:
-                            var_name = str(var)
+                            var_name = Equation.to_latex_tuple(var)
                         solution_ax.text(0.05, y_pos, f"${var_name} = {val:.6f}$", fontsize=12)
                         y_pos -= 0.12
                 

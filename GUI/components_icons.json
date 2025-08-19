@@ -222,5 +222,297 @@
         ]
       }
     ]
+  },
+  "current_dependent_current_source": {
+    "width": 90,
+    "height": 40,
+    "terminals": [
+      {"x": 0, "y": 20},
+      {"x": 90, "y": 20}
+    ],
+    "icon": [
+      {
+        "type": "line",
+        "points": [
+          {"x": 25, "y": 20},
+          {"x": 45, "y": 0}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 45, "y": 0},
+          {"x": 65, "y": 20}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 25, "y": 20},
+          {"x": 45, "y": 40}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 45, "y": 40},
+          {"x": 65, "y": 20}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 0, "y": 20},
+          {"x": 25, "y": 20}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 65, "y": 20},
+          {"x": 90, "y": 20}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 30, "y": 20},
+          {"x": 60, "y": 20}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 53, "y": 15},
+          {"x": 60, "y": 20}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 53, "y": 25},
+          {"x": 60, "y": 20}
+        ]
+      }
+    ]
+  },
+  "current_dependent_tension_source": {
+    "width": 90,
+    "height": 40,
+    "terminals": [
+      {"x": 0, "y": 20},
+      {"x": 90, "y": 20}
+    ],
+    "icon": [
+      {
+        "type": "line",
+        "points": [
+          {"x": 25, "y": 20},
+          {"x": 45, "y": 0}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 45, "y": 0},
+          {"x": 65, "y": 20}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 25, "y": 20},
+          {"x": 45, "y": 40}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 45, "y": 40},
+          {"x": 65, "y": 20}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 0, "y": 20},
+          {"x": 25, "y": 20}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 65, "y": 20},
+          {"x": 90, "y": 20}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 30, "y": 20},
+          {"x": 40, "y": 20}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 35, "y": 15},
+          {"x": 35, "y": 25}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 50, "y": 15},
+          {"x": 50, "y": 25}
+        ]
+      }
+    ]
+  },
+  "tension_dependent_current_source": {
+    "width": 90,
+    "height": 40,
+    "terminals": [
+      {"x": 0, "y": 20},
+      {"x": 90, "y": 20}
+    ],
+    "icon": [
+      {
+        "type": "line",
+        "points": [
+          {"x": 25, "y": 20},
+          {"x": 45, "y": 0}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 45, "y": 0},
+          {"x": 65, "y": 20}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 25, "y": 20},
+          {"x": 45, "y": 40}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 45, "y": 40},
+          {"x": 65, "y": 20}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 0, "y": 20},
+          {"x": 25, "y": 20}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 65, "y": 20},
+          {"x": 90, "y": 20}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 30, "y": 20},
+          {"x": 60, "y": 20}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 53, "y": 15},
+          {"x": 60, "y": 20}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 53, "y": 25},
+          {"x": 60, "y": 20}
+        ]
+      }
+    ]
+  },
+  "tension_dependent_tension_source": {
+    "width": 90,
+    "height": 40,
+    "terminals": [
+      {"x": 0, "y": 20},
+      {"x": 90, "y": 20}
+    ],
+    "icon": [
+      {
+        "type": "line",
+        "points": [
+          {"x": 25, "y": 20},
+          {"x": 45, "y": 0}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 45, "y": 0},
+          {"x": 65, "y": 20}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 25, "y": 20},
+          {"x": 45, "y": 40}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 45, "y": 40},
+          {"x": 65, "y": 20}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 0, "y": 20},
+          {"x": 25, "y": 20}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 65, "y": 20},
+          {"x": 90, "y": 20}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 30, "y": 20},
+          {"x": 40, "y": 20}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 35, "y": 15},
+          {"x": 35, "y": 25}
+        ]
+      },
+      {
+        "type": "line",
+        "points": [
+          {"x": 50, "y": 15},
+          {"x": 50, "y": 25}
+        ]
+      }
+    ]
   }
 }

@@ -99,6 +99,30 @@ class CanvasHandler:
             if hasattr(self.preview_rectangle, 'current_rotation'):
                 self.preview_rectangle.current_rotation = 0
             return
+        elif self.cursor_mode == "current_dependent_current_source":
+            self.handle_current_dependent_current_source_placement(x, y, component_manager, node_manager)
+            # Resetar rotação após colocar o componente
+            if hasattr(self.preview_rectangle, 'current_rotation'):
+                self.preview_rectangle.current_rotation = 0
+            return
+        elif self.cursor_mode == "current_dependent_tension_source":
+            self.handle_current_dependent_tension_source_placement(x, y, component_manager, node_manager)
+            # Resetar rotação após colocar o componente
+            if hasattr(self.preview_rectangle, 'current_rotation'):
+                self.preview_rectangle.current_rotation = 0
+            return
+        elif self.cursor_mode == "tension_dependent_current_source":
+            self.handle_tension_dependent_current_source_placement(x, y, component_manager, node_manager)
+            # Resetar rotação após colocar o componente
+            if hasattr(self.preview_rectangle, 'current_rotation'):
+                self.preview_rectangle.current_rotation = 0
+            return
+        elif self.cursor_mode == "tension_dependent_tension_source":
+            self.handle_tension_dependent_tension_source_placement(x, y, component_manager, node_manager)
+            # Resetar rotação após colocar o componente
+            if hasattr(self.preview_rectangle, 'current_rotation'):
+                self.preview_rectangle.current_rotation = 0
+            return
         elif self.cursor_mode == "ground":
             self.handle_ground_placement(x, y, component_manager, node_manager)
             return
@@ -129,7 +153,7 @@ class CanvasHandler:
     def on_rotate_key(self, event: tk.Event) -> None:
         """Manipula a tecla R para rotação do componente preview"""
         # Só permitir rotação se estiver em modo de colocação de componente
-        if self.cursor_mode in ["resistor", "voltage_source", "current_source"]:
+        if self.cursor_mode in ["resistor", "voltage_source", "current_source", "current_dependent_current_source", "current_dependent_tension_source", "tension_dependent_current_source", "tension_dependent_tension_source"]:
             self.preview_rectangle.rotate()
     
     def handle_resistor_placement(self, x: int, y: int, component_manager: 'ComponentManager', node_manager: 'NodeManager') -> None:
@@ -195,6 +219,103 @@ class CanvasHandler:
         # Criar wires para conectar os terminais na direção correta
         wire1_name, wire2_name = self._create_wires_for_terminals(terminal_1, terminal_2, rotation, node_manager)
         component_name = component_manager.add_current_source(x, y, [{**terminal_1, 'wire': wire1_name}, {**terminal_2, 'wire': wire2_name}], rotation)
+        node_manager.connect_wire_to_component(wire1_name, component_name, 0)
+        node_manager.connect_wire_to_component(wire2_name, component_name, 1)
+        
+        self.preview_rectangle.hide()
+        self.cursor_mode = "default"
+    
+    def handle_current_dependent_current_source_placement(self, x: int, y: int, component_manager: 'ComponentManager', node_manager: 'NodeManager') -> None:
+        """Manipula a colocação de uma fonte de corrente dependente"""
+        # Obter rotação atual do preview
+        rotation = self.preview_rectangle.get_rotation()
+        
+        # Obter posições dos terminais com rotação aplicada
+        terminals = self.canvas_widget.get_component_terminals('current_dependent_current_source', rotation)
+    
+        # Calcular posições absolutas dos terminais
+        terminal_1 = { 'x': x + terminals[0]['x'], 'y': y + terminals[0]['y'] }
+        terminal_2 = { 'x': x + terminals[1]['x'], 'y': y + terminals[1]['y'] }
+        
+        # Criar wires para conectar os terminais na direção correta
+        wire1_name, wire2_name = self._create_wires_for_terminals(terminal_1, terminal_2, rotation, node_manager)
+        # Adicionar o componente com rotação
+        component_name = component_manager.add_current_dependent_current_source(x, y, [{**terminal_1, 'wire': wire1_name}, {**terminal_2, 'wire': wire2_name}], rotation)
+        node_manager.connect_wire_to_component(wire1_name, component_name, 0)
+        node_manager.connect_wire_to_component(wire2_name, component_name, 1)
+        
+        self.preview_rectangle.hide()
+        self.cursor_mode = "default"
+    
+    def handle_current_dependent_tension_source_placement(self, x: int, y: int, component_manager: 'ComponentManager', node_manager: 'NodeManager') -> None:
+        """Manipula a colocação de uma fonte de tensão dependente de corrente"""
+        # Obter rotação atual do preview
+        rotation = self.preview_rectangle.get_rotation()
+        
+        # Obter posições dos terminais com rotação aplicada
+        terminals = self.canvas_widget.get_component_terminals('current_dependent_tension_source', rotation)
+        
+        # Calcular posições absolutas dos terminais
+        terminal_1 = { 'x': x + terminals[0]['x'], 'y': y + terminals[0]['y'] }
+        terminal_2 = { 'x': x + terminals[1]['x'], 'y': y + terminals[1]['y'] }
+        
+        # Criar wires para conectar os terminais na direção correta
+        wire1_name, wire2_name = self._create_wires_for_terminals(terminal_1, terminal_2, rotation, node_manager)
+        
+        # Adicionar a fonte de tensão dependente com rotação
+        component_name = component_manager.add_current_dependent_tension_source(x, y, [{**terminal_1, 'wire': wire1_name}, {**terminal_2, 'wire': wire2_name}], rotation)
+        
+        # Conectar os wires ao componente
+        node_manager.connect_wire_to_component(wire1_name, component_name, 0)
+        node_manager.connect_wire_to_component(wire2_name, component_name, 1)
+        
+        self.preview_rectangle.hide()
+        self.cursor_mode = "default"
+    
+    def handle_tension_dependent_current_source_placement(self, x: int, y: int, component_manager: 'ComponentManager', node_manager: 'NodeManager') -> None:
+        """Manipula a colocação de uma fonte de corrente dependente de tensão"""
+        # Obter rotação atual do preview
+        rotation = self.preview_rectangle.get_rotation()
+        
+        # Obter posições dos terminais com rotação aplicada
+        terminals = self.canvas_widget.get_component_terminals('tension_dependent_current_source', rotation)
+        
+        # Calcular posições absolutas dos terminais
+        terminal_1 = { 'x': x + terminals[0]['x'], 'y': y + terminals[0]['y'] }
+        terminal_2 = { 'x': x + terminals[1]['x'], 'y': y + terminals[1]['y'] }
+        
+        # Criar wires para conectar os terminais na direção correta
+        wire1_name, wire2_name = self._create_wires_for_terminals(terminal_1, terminal_2, rotation, node_manager)
+        
+        # Adicionar a fonte de corrente dependente de tensão com rotação
+        component_name = component_manager.add_tension_dependent_current_source(x, y, [{**terminal_1, 'wire': wire1_name}, {**terminal_2, 'wire': wire2_name}], rotation)
+        
+        # Conectar os wires ao componente
+        node_manager.connect_wire_to_component(wire1_name, component_name, 0)
+        node_manager.connect_wire_to_component(wire2_name, component_name, 1)
+        
+        self.preview_rectangle.hide()
+        self.cursor_mode = "default"
+    
+    def handle_tension_dependent_tension_source_placement(self, x: int, y: int, component_manager: 'ComponentManager', node_manager: 'NodeManager') -> None:
+        """Manipula a colocação de uma fonte de tensão dependente de tensão"""
+        # Obter rotação atual do preview
+        rotation = self.preview_rectangle.get_rotation()
+        
+        # Obter posições dos terminais com rotação aplicada
+        terminals = self.canvas_widget.get_component_terminals('tension_dependent_tension_source', rotation)
+        
+        # Calcular posições absolutas dos terminais
+        terminal_1 = { 'x': x + terminals[0]['x'], 'y': y + terminals[0]['y'] }
+        terminal_2 = { 'x': x + terminals[1]['x'], 'y': y + terminals[1]['y'] }
+        
+        # Criar wires para conectar os terminais na direção correta
+        wire1_name, wire2_name = self._create_wires_for_terminals(terminal_1, terminal_2, rotation, node_manager)
+        
+        # Adicionar a fonte de tensão dependente de tensão com rotação
+        component_name = component_manager.add_tension_dependent_tension_source(x, y, [{**terminal_1, 'wire': wire1_name}, {**terminal_2, 'wire': wire2_name}], rotation)
+        
+        # Conectar os wires ao componente
         node_manager.connect_wire_to_component(wire1_name, component_name, 0)
         node_manager.connect_wire_to_component(wire2_name, component_name, 1)
         
@@ -281,9 +402,10 @@ class CanvasHandler:
             tags: Tuple[str, ...] = canvas.gettags(clicked_item[0])
             
             for tag in tags:
-                print(tag)
                 if tag.startswith("component_"):
                     component_name: str = tag.split("_", 1)[1]
+                    if component_manager.get_component(component_name)['type'] in ["tension_dependent_current_source", "tension_dependent_tension_source"]:
+                        node_manager.name_all_nodes()
                     component_manager.edit_component_properties(component_name, self.canvas_widget.get_root())
                     return
                 elif tag.startswith("wire_terminal_"):
@@ -319,6 +441,14 @@ class CanvasHandler:
             self.preview_rectangle.update("voltage_source", event.x, event.y)
         elif self.cursor_mode == "current_source":
             self.preview_rectangle.update("current_source", event.x, event.y)
+        elif self.cursor_mode == "current_dependent_current_source":
+            self.preview_rectangle.update("current_dependent_current_source", event.x, event.y)
+        elif self.cursor_mode == "current_dependent_tension_source":
+            self.preview_rectangle.update("current_dependent_tension_source", event.x, event.y)
+        elif self.cursor_mode == "tension_dependent_current_source":
+            self.preview_rectangle.update("tension_dependent_current_source", event.x, event.y)
+        elif self.cursor_mode == "tension_dependent_tension_source":
+            self.preview_rectangle.update("tension_dependent_tension_source", event.x, event.y)
         elif self.cursor_mode == "ground":
             self.preview_rectangle.update("ground", event.x, event.y)
         elif node_manager.get_selected_node():

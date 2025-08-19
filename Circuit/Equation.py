@@ -86,7 +86,7 @@ class Equation:
             else:
                 # Para correntes (assumindo que k é uma tupla com o primeiro elemento sendo o nome)
                 if hasattr(k, '__getitem__') and len(k) > 0:
-                    var_str = f"i_{{{k[0].name}}}"
+                    var_str = self.to_latex_tuple(k)
                 else:
                     var_str = str(k)
             
@@ -111,3 +111,12 @@ class Equation:
             right_side = "0"
         
         return f"{left_side} = {right_side}"
+    
+    @staticmethod
+    def to_latex_tuple(var, loop_analysis=False):
+        if type(var[0]).__name__ in ['IndependentCurrentSource', 'TensionDependentCurrentSource', 'CurrentDependentCurrentSource']:
+            return  f"i_{{{var[0].name}}}"
+        elif type(var[0]).__name__ in ['IndependentTensionSource', 'TensionDependentTensionSource', 'CurrentDependentTensionSource']:
+            return  f"v_{{{var[0].name}}}"
+        else:
+            return str(var)
