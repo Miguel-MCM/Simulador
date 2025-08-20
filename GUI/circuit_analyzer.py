@@ -101,7 +101,7 @@ class CircuitAnalyzer:
                 return None
 
             for i, loop in enumerate(loops):
-                loop.set_name(f"L{i+1}")
+                loop.set_name(f"L_{i+1}")
             # Mostrar loops e permitir edição de nomes
             if not self._show_loops_editor(loops):
                 return None  # Usuário cancelou

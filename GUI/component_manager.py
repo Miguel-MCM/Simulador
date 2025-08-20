@@ -331,7 +331,7 @@ class ComponentManager:
             ttk.Label(main_frame, text="Nó 2:").grid(row=3, column=0, sticky=tk.W, pady=5)
             
             # Obter lista de nós disponíveis
-            available_nodes = []
+            available_nodes = ['GND']
             if hasattr(self.canvas_widget, 'circuit_gui') and self.canvas_widget.circuit_gui:
                 if hasattr(self.canvas_widget.circuit_gui, 'node_manager'):
                     nodes = self.canvas_widget.circuit_gui.node_manager.get_all_nodes()
