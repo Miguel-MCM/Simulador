@@ -195,7 +195,7 @@ Este projeto foi desenvolvido como parte do PIBITI (Programa Institucional de Bo
 
 ## 👥 Autores
 
-Desenvolvido por estudantes de engenharia elétrica como projeto de iniciação científica.
+Desenvolvido por estudantes de engenharia de computação como projeto de iniciação científica.
 
 ---
 

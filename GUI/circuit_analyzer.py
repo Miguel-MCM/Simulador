@@ -35,13 +35,13 @@ class CircuitAnalyzer:
             elif component_data['type'] == 'current_source':
                 node1 = node_objects[nodes[component_data['connections'][0]['wire']]['node']]
                 node2 = node_objects[nodes[component_data['connections'][1]['wire']]['node']]
-                component: IndependentCurrentSource = IndependentCurrentSource(component_data['value'], node2, node1, name=component_name)
+                component: IndependentCurrentSource = IndependentCurrentSource(component_data['value'], node1, node2, name=component_name)
             elif component_data['type'] == 'tension_dependent_current_source':
                 node1 = node_objects[nodes[component_data['connections'][0]['wire']]['node']]
                 node2 = node_objects[nodes[component_data['connections'][1]['wire']]['node']]
                 v_plus = node_objects[nodes[component_data['tension_nodes'][0]]]
                 v_minus = node_objects[nodes[component_data['tension_nodes'][1]]]
-                component: TensionDependentCurrentSource = TensionDependentCurrentSource(component_data['value'], node2, node1, v_plus, v_minus, name=component_name)
+                component: TensionDependentCurrentSource = TensionDependentCurrentSource(component_data['value'], node1, node2, v_plus, v_minus, name=component_name)
             elif component_data['type'] == 'tension_dependent_tension_source':
                 node1 = node_objects[nodes[component_data['connections'][0]['wire']]['node']]
                 node2 = node_objects[nodes[component_data['connections'][1]['wire']]['node']]
@@ -53,7 +53,7 @@ class CircuitAnalyzer:
                 node2 = node_objects[nodes[component_data['connections'][1]['wire']]['node']]
                 component_current = component_objects[component_data['component_current']]
                 current_out_of = component_current.nodes[0]
-                component: CurrentDependentCurrentSource = CurrentDependentCurrentSource(component_data['value'], node2, node1, component_current, current_out_of, name=component_name)
+                component: CurrentDependentCurrentSource = CurrentDependentCurrentSource(component_data['value'], node1, node2, component_current, current_out_of, name=component_name)
             elif component_data['type'] == 'current_dependent_tension_source':
                 node1 = node_objects[nodes[component_data['connections'][0]['wire']]['node']]
                 node2 = node_objects[nodes[component_data['connections'][1]['wire']]['node']]
